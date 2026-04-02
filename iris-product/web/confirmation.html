@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>You're In — Iris</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #141417;
+      --surface-2: #1c1c21;
+      --border: #2a2a32;
+      --text: #f0eee8;
+      --text-muted: #8a8795;
+      --accent: #7c5cbf;
+      --accent-glow: rgba(124, 92, 191, 0.15);
+      --accent-light: #a882f0;
+      --green: #3ecf6e;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 580px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--accent-light);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+
+    .badge .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .headline {
+      font-size: clamp(36px, 6vw, 56px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+
+    .headline span {
+      color: var(--accent-light);
+    }
+
+    .subhead {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 440px;
+      margin: 0 auto 48px;
+      font-weight: 400;
+      line-height: 1.65;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .email-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .email-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 18px;
+    }
+
+    .email-text strong {
+      display: block;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .email-text p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .steps-preview {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .steps-preview li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-light);
+      flex-shrink: 0;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 0;
+    }
+
+    .quote {
+      font-size: 15px;
+      color: var(--text-muted);
+      font-style: italic;
+      border-left: 2px solid var(--accent);
+      padding-left: 16px;
+      line-height: 1.6;
+      margin: 32px 0;
+      text-align: left;
+    }
+
+    .footer {
+      margin-top: 40px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .footer a {
+      color: var(--accent-light);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Subtle background gradient */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(124, 92, 191, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="badge">
+      <span class="dot"></span>
+      Order Confirmed
+    </div>
+
+    <h1 class="headline">
+      She's here.<br /><span>You did it.</span>
+    </h1>
+
+    <p class="subhead">
+      You just signed up for the kind of accountability that doesn't let you off the hook.
+      Good. That's exactly what you needed.
+    </p>
+
+    <div class="card">
+      <div class="card-label">What's next</div>
+      <div class="email-notice">
+        <div class="email-icon">✉️</div>
+        <div class="email-text">
+          <strong>Check your inbox</strong>
+          <p>
+            A confirmation email is on its way to you right now. It has everything you need to get Iris
+            up and running, step by step. No experience required. Takes about 15 minutes total.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">A quick preview</div>
+      <ul class="steps-preview">
+        <li>
+          <span class="step-num">1</span>
+          Download Iris and run the one-time installer
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          Create her Telegram bot in about 2 minutes
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          Add your API key and start the bot
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          Open Telegram and say hi — she'll take it from there
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          Set up automatic check-ins so she reaches out first
+        </li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Pro tip</div>
+      <p style="font-size: 14px; color: var(--text-muted); line-height: 1.65;">
+        IRIS works best when you're specific. Tell her what's actually going on — not the polished version. The more real you are, the more useful she gets.
+      </p>
+    </div>
+
+    <div class="quote">
+      "I'll remember everything from this point forward. You won't be able to use 'I forgot' as an excuse anymore.
+      Trust me, I've heard it. It doesn't land the way people think it does."
+      <br /><br />— Iris
+    </div>
+
+    <div class="footer">
+      Didn't get the email? Check your spam folder, or <a href="mailto:support@example.com">contact support</a>.
+    </div>
+
+  </div>
+</body>
+</html>

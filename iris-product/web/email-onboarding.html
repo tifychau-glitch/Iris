@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
+  <title>You're In — Here's How to Get Started with Iris</title>
+  <style>
+    /* Reset */
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; }
+    img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    table { border-collapse: collapse !important; }
+    body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; }
+
+    /* Main */
+    body {
+      background-color: #0f0f12;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    .wrapper {
+      background-color: #0f0f12;
+      padding: 40px 16px;
+    }
+
+    .email-body {
+      background-color: #141417;
+      border: 1px solid #252530;
+      border-radius: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1a1625 0%, #141417 100%);
+      border-bottom: 1px solid #252530;
+      padding: 40px 40px 36px;
+      text-align: center;
+    }
+
+    .logo-mark {
+      display: inline-block;
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #7c5cbf, #a882f0);
+      border-radius: 14px;
+      margin-bottom: 20px;
+      line-height: 52px;
+      font-size: 22px;
+      text-align: center;
+    }
+
+    .header h1 {
+      color: #f0eee8;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px;
+      line-height: 1.3;
+    }
+
+    .header p {
+      color: #8a8795;
+      font-size: 15px;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* Body */
+    .content {
+      padding: 36px 40px;
+    }
+
+    .greeting {
+      color: #f0eee8;
+      font-size: 16px;
+      line-height: 1.65;
+      margin-bottom: 24px;
+    }
+
+    .greeting strong {
+      color: #a882f0;
+    }
+
+    /* Section headers */
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .section-number {
+      width: 28px;
+      height: 28px;
+      background: #1c1c24;
+      border: 1px solid #2e2e3a;
+      border-radius: 50%;
+      color: #a882f0;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      color: #f0eee8;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .section-desc {
+      color: #8a8795;
+      font-size: 13px;
+      font-weight: 400;
+      margin-left: 4px;
+    }
+
+    /* Step cards */
+    .step-card {
+      background: #1a1a21;
+      border: 1px solid #252530;
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 10px;
+    }
+
+    .step-card p {
+      color: #c8c4d4;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .step-card .step-title {
+      color: #f0eee8;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .step-card .note {
+      background: #1f1f2e;
+      border-left: 3px solid #7c5cbf;
+      border-radius: 0 6px 6px 0;
+      padding: 10px 14px;
+      margin-top: 12px;
+      color: #a882f0;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .step-card .warning {
+      background: #1f1a12;
+      border-left: 3px solid #d4a24a;
+      border-radius: 0 6px 6px 0;
+      padding: 10px 14px;
+      margin-top: 12px;
+      color: #d4a24a;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    /* Code blocks */
+    .code-block {
+      background: #0d0d10;
+      border: 1px solid #252530;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 10px;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+      font-size: 13px;
+      color: #a882f0;
+      line-height: 1.7;
+      word-break: break-all;
+    }
+
+    .code-comment {
+      color: #52525e;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: #252530;
+      margin: 28px 0;
+    }
+
+    /* Commands table */
+    .commands-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    .commands-table th {
+      background: #1a1a21;
+      color: #8a8795;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #252530;
+    }
+
+    .commands-table td {
+      padding: 12px 14px;
+      font-size: 14px;
+      border-bottom: 1px solid #1e1e27;
+      vertical-align: top;
+    }
+
+    .commands-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .commands-table .cmd {
+      font-family: 'SF Mono', 'Monaco', monospace;
+      color: #a882f0;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .commands-table .cmd-desc {
+      color: #8a8795;
+      font-size: 13px;
+    }
+
+    /* Onboarding flow */
+    .onboarding-steps {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .onboarding-step {
+      display: flex;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid #1e1e27;
+    }
+
+    .onboarding-step:last-child {
+      border-bottom: none;
+    }
+
+    .onboarding-step .q {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .onboarding-step .detail strong {
+      color: #f0eee8;
+      font-size: 14px;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .onboarding-step .detail p {
+      color: #8a8795;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* What to expect */
+    .expect-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .expect-item {
+      background: #1a1a21;
+      border: 1px solid #252530;
+      border-radius: 10px;
+      padding: 16px 18px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .expect-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .expect-item strong {
+      color: #f0eee8;
+      font-size: 14px;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .expect-item p {
+      color: #8a8795;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* FAQ */
+    .faq-item {
+      border-bottom: 1px solid #1e1e27;
+      padding: 16px 0;
+    }
+
+    .faq-item:first-child {
+      padding-top: 0;
+    }
+
+    .faq-item:last-child {
+      border-bottom: none;
+    }
+
+    .faq-q {
+      color: #f0eee8;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .faq-a {
+      color: #8a8795;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .faq-a code {
+      font-family: monospace;
+      background: #1a1a21;
+      border: 1px solid #2e2e3a;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 12px;
+      color: #a882f0;
+    }
+
+    /* Iris quote */
+    .iris-quote {
+      background: linear-gradient(135deg, #1a1625, #141420);
+      border: 1px solid #2e2040;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin: 28px 0;
+    }
+
+    .iris-quote p {
+      color: #c8c4d4;
+      font-size: 15px;
+      font-style: italic;
+      line-height: 1.65;
+      margin: 0 0 12px;
+    }
+
+    .iris-quote cite {
+      color: #7c5cbf;
+      font-size: 13px;
+      font-weight: 600;
+      font-style: normal;
+    }
+
+    /* Footer */
+    .footer {
+      background: #0f0f12;
+      border-top: 1px solid #1e1e27;
+      padding: 28px 40px;
+      text-align: center;
+    }
+
+    .footer p {
+      color: #52525e;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 0 0 6px;
+    }
+
+    .footer a {
+      color: #7c5cbf;
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media only screen and (max-width: 600px) {
+      .content { padding: 28px 24px !important; }
+      .header { padding: 32px 24px 28px !important; }
+      .footer { padding: 24px !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+<div class="email-body">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-mark">◈</div>
+    <h1>She's ready. Are you?</h1>
+    <p>Your step-by-step guide to getting started with Iris.</p>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content">
+
+    <p class="greeting">
+      Welcome to Iris. You've just signed up for an accountability coach who doesn't forget anything,
+      doesn't let you off easy, and genuinely wants you to win. She's sharp, she's warm, and she's yours.
+      <br /><br />
+      This email is your complete setup guide. Everything you need is here.
+      Follow the steps in order and you'll be up and running in about <strong>15 minutes</strong>.
+    </p>
+
+    <div class="divider"></div>
+
+    <!-- PART 0: BEFORE YOU START -->
+    <div class="section">
+      <div class="section-label">
+        <span style="color: #8a8795; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;">Before you begin</span>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">What you'll need</p>
+        <p>
+          Make sure you have these four things before you start:
+        </p>
+        <br />
+        <p>
+          <strong style="color: #f0eee8;">A Mac.</strong> Iris's automatic scheduling runs on macOS. Windows support is not included in this version.
+        </p>
+        <br />
+        <p>
+          <strong style="color: #f0eee8;">Telegram.</strong> Free app available at telegram.org or in the App Store. If you already have it, you're set. If not, download and create a free account now.
+        </p>
+        <br />
+        <p>
+          <strong style="color: #f0eee8;">An Anthropic API key.</strong> This is what powers Iris's intelligence. If you already use Claude, you have one. If not, get one at console.anthropic.com. It's pay-as-you-go — Iris's daily usage costs pennies.
+        </p>
+        <br />
+        <p>
+          <strong style="color: #f0eee8;">Terminal.</strong> Already on your Mac. You'll find it in Applications > Utilities, or search "Terminal" in Spotlight. No coding experience needed — you're just copy-pasting commands.
+        </p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- PART 1: INSTALL -->
+    <div class="section">
+      <div class="section-label">
+        <span class="section-number">1</span>
+        <span class="section-title">Download and Install Iris <span class="section-desc">~3 min</span></span>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Download your files</p>
+        <p>Use the download link from your purchase confirmation. You'll get a zip file called <em>iris-product.zip</em> or similar.</p>
+        <div class="warning">
+          Save it somewhere permanent — like your Desktop or Documents folder. Not Downloads. Files in Downloads tend to get cleared, and Iris's databases live inside this folder.
+        </div>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Unzip the folder</p>
+        <p>Double-click the zip file to extract it. You'll have a folder called <em>iris-product</em> (or similar). Move it to where you want to keep it permanently.</p>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Open Terminal and navigate to the Iris folder</p>
+        <p>Open Terminal. Then type <strong style="color: #f0eee8;">cd</strong> followed by a space, then drag your Iris folder directly into the Terminal window. It will auto-fill the full path. Press Enter.</p>
+        <div class="code-block">
+          cd /Users/yourname/Desktop/iris-product
+        </div>
+        <div class="note">
+          Dragging the folder into Terminal is the easiest way to get the exact path without typing it.
+        </div>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Run the installer</p>
+        <p>Copy and paste this command, then press Enter. It installs everything Iris needs. Takes about 2 minutes.</p>
+        <div class="code-block">
+          bash setup.sh
+        </div>
+        <p style="margin-top: 10px;">You'll see packages downloading. When it finishes and you see a prompt again, you're done. If it asks you for anything, just press Enter to accept the defaults.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- PART 2: TELEGRAM BOT -->
+    <div class="section">
+      <div class="section-label">
+        <span class="section-number">2</span>
+        <span class="section-title">Create Iris's Telegram Bot <span class="section-desc">~3 min</span></span>
+      </div>
+
+      <p style="color: #8a8795; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+        Iris communicates through her own private Telegram bot. You'll create it now using Telegram's official bot builder.
+      </p>
+
+      <div class="step-card">
+        <p class="step-title">Find @BotFather on Telegram</p>
+        <p>Open Telegram. In the search bar, type <strong style="color: #f0eee8;">@BotFather</strong>. It should be the first result, with a blue checkmark. Open that chat.</p>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Create a new bot</p>
+        <p>Send this message to BotFather:</p>
+        <div class="code-block">/newbot</div>
+        <p style="margin-top: 10px;">BotFather will ask you two questions.</p>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Answer BotFather's questions</p>
+        <p><strong style="color: #f0eee8;">First question — "What's the name of your bot?"</strong></p>
+        <p>Type: <strong style="color: #a882f0;">Iris</strong></p>
+        <br />
+        <p><strong style="color: #f0eee8;">Second question — "Choose a username for your bot."</strong></p>
+        <p>Pick something unique that ends in _bot. Examples:</p>
+        <div class="code-block">
+          myiris_bot<br />
+          irisformike_bot<br />
+          iriscoach_bot
+        </div>
+        <div class="note">
+          Bot usernames are globally unique across all of Telegram. If it says the name is taken, try something slightly different.
+        </div>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Copy your bot token</p>
+        <p>After you choose a username, BotFather will send you a message containing your <strong style="color: #f0eee8;">bot token</strong>. It looks like this:</p>
+        <div class="code-block">7834521097:AAFqrTzSeLIoqMnXnpP8WxQDtUv_yZkRCmE</div>
+        <p style="margin-top: 10px;">Copy the entire token and save it somewhere temporarily. You'll need it in the next step.</p>
+        <div class="warning">
+          Keep this token private. Anyone who has it can control your bot.
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- PART 3: CREDENTIALS -->
+    <div class="section">
+      <div class="section-label">
+        <span class="section-number">3</span>
+        <span class="section-title">Add Your Credentials <span class="section-desc">~2 min</span></span>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Find the .env file</p>
+        <p>Inside your Iris folder, there's a file called <strong style="color: #f0eee8;">.env</strong>. It starts with a dot, which means it's hidden by default.</p>
+        <br />
+        <p>To see hidden files in Finder, open the Iris folder and press:</p>
+        <div class="code-block">Command + Shift + .</div>
+        <p style="margin-top: 10px;">Hidden files will appear. Look for <strong style="color: #f0eee8;">.env</strong>.</p>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Open and fill in the .env file</p>
+        <p>Right-click <strong style="color: #f0eee8;">.env</strong> and open it with TextEdit or any text editor. You'll see:</p>
+        <div class="code-block">
+          TELEGRAM_BOT_TOKEN=<span class="code-comment"># paste your token here</span><br />
+          ANTHROPIC_API_KEY=<span class="code-comment"># paste your Anthropic key here</span><br />
+          TELEGRAM_CHAT_ID=<span class="code-comment"># leave this blank</span>
+        </div>
+        <p style="margin-top: 10px;">Fill in your Telegram bot token and your Anthropic API key. Leave <strong style="color: #f0eee8;">TELEGRAM_CHAT_ID</strong> blank — Iris fills it in automatically after you first message her.</p>
+        <div class="warning">
+          Make sure there are no spaces before or after the values. Just: <code>KEY=value</code> with nothing extra.
+        </div>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Save the file</p>
+        <p>Save and close the .env file. You're done with credentials.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- PART 4: START THE BOT -->
+    <div class="section">
+      <div class="section-label">
+        <span class="section-number">4</span>
+        <span class="section-title">Start Iris <span class="section-desc">~1 min</span></span>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Activate the environment and start the bot</p>
+        <p>Back in Terminal (still in your Iris folder), run these two commands. Copy them exactly.</p>
+        <div class="code-block">
+          source .venv/bin/activate<br />
+          python3 .claude/skills/iris-telegram/scripts/iris_bot.py
+        </div>
+        <p style="margin-top: 10px;">If everything worked, you'll see:</p>
+        <div class="code-block" style="color: #3ecf6e;">
+          [iris_bot] Iris is listening on Telegram...
+        </div>
+        <div class="note">
+          Always run <code style="color: #f0eee8;">source .venv/bin/activate</code> first before any Iris commands. This activates the virtual environment Iris needs to run.
+        </div>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Keep this Terminal window open</p>
+        <p>
+          The bot runs as long as this Terminal window is open. Don't close it. If you do, Iris will stop responding until you start her again.
+          Later in this guide (Part 6), you'll set her up to run automatically in the background — you won't need to do this manually every time.
+        </p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- PART 5: FIRST CONVERSATION -->
+    <div class="section">
+      <div class="section-label">
+        <span class="section-number">5</span>
+        <span class="section-title">Say Hello — Onboarding with Iris <span class="section-desc">~5 min</span></span>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Find your bot on Telegram</p>
+        <p>Open Telegram. In the search bar, type the bot username you created (e.g. <strong style="color: #a882f0;">@myiris_bot</strong>). Open the chat.</p>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Send your first message</p>
+        <p>
+          This is the most important step that people miss: <strong style="color: #f0eee8;">you have to type something first.</strong>
+          Iris is listening, but she won't speak until you initiate. It doesn't matter what you say.
+        </p>
+        <div class="code-block">hi</div>
+        <p style="margin-top: 10px;">The moment you send that message, two things happen: Iris introduces herself, and your chat ID gets saved so check-ins work going forward.</p>
+        <div class="note">
+          If Iris doesn't respond within 30 seconds, go back to Terminal and make sure iris_bot.py is still running (you should see the "Iris is listening" message).
+        </div>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Answer her onboarding questions</p>
+        <p>Iris will walk you through 6 quick questions. Here's what she's asking and what she's doing with your answers:</p>
+        <br />
+
+        <ul class="onboarding-steps">
+          <li class="onboarding-step">
+            <span class="q">👤</span>
+            <div class="detail">
+              <strong>What should I call you?</strong>
+              <p>Your name. She'll remember it and use it. No need to be formal.</p>
+            </div>
+          </li>
+          <li class="onboarding-step">
+            <span class="q">🎚️</span>
+            <div class="detail">
+              <strong>Your max intensity level (1-5)</strong>
+              <p>This is the ceiling of how harsh she'll ever get with you. 1 is warm and encouraging. 5 is full drill sergeant. She starts gentle with everyone and only escalates based on your actual behavior. Pick the highest you're honestly willing to tolerate when things get rough.</p>
+            </div>
+          </li>
+          <li class="onboarding-step">
+            <span class="q">⏰</span>
+            <div class="detail">
+              <strong>Your wake and sleep times</strong>
+              <p>Just rough times, like "7am and 11pm." She uses this to schedule check-ins at reasonable hours and figure out what counts as "today."</p>
+            </div>
+          </li>
+          <li class="onboarding-step">
+            <span class="q">📬</span>
+            <div class="detail">
+              <strong>Your check-in times</strong>
+              <p>She'll suggest a morning, midday, and evening time based on your schedule. You can say yes or give her custom times. These are when she'll message you proactively — you don't have to remember to check in.</p>
+            </div>
+          </li>
+          <li class="onboarding-step">
+            <span class="q">🤬</span>
+            <div class="detail">
+              <strong>Swearing preference</strong>
+              <p>At the higher accountability levels, Iris gets more colorful. She asks if that's okay. Honest answer recommended — this isn't about being polite, it's about what actually works for you.</p>
+            </div>
+          </li>
+          <li class="onboarding-step">
+            <span class="q">🎯</span>
+            <div class="detail">
+              <strong>Your first commitment</strong>
+              <p>One thing you're going to do today. She logs it, tracks it, and will ask you about it. Make it real — this is where it starts.</p>
+            </div>
+          </li>
+        </ul>
+
+        <div class="note">
+          If you get interrupted mid-onboarding — app closes, phone dies, anything — just come back and say hi again. Iris picks up exactly where you left off.
+        </div>
+
+        <div class="note" style="margin-top: 16px; border-left-color: #a882f0;">
+          <strong style="color: #f0eee8; display: block; margin-bottom: 4px;">Quick tip:</strong>
+          IRIS works best when you're specific. Tell her what's actually going on — not the polished version. The more real you are, the more useful she gets.
+        </div>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">You'll know you're set up when she says:</p>
+        <div class="code-block" style="color: #f0eee8; font-style: italic;">"Logged. I'll remember that. [Name], I'm watching now. Welcome to Iris."</div>
+      </div>
+    </div>
+
+    <div class="iris-quote">
+      <p>
+        "People treat accountability like it's supposed to feel comfortable. It's not. If it felt comfortable,
+        you wouldn't need me. I'm here for the gap between what you say you'll do and what you actually do.
+        That's my lane. Let's see what we're working with."
+      </p>
+      <cite>— Iris</cite>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- PART 6: AUTOMATIC CHECK-INS -->
+    <div class="section">
+      <div class="section-label">
+        <span class="section-number">6</span>
+        <span class="section-title">Set Up Automatic Check-Ins <span class="section-desc">~3 min — recommended</span></span>
+      </div>
+
+      <p style="color: #8a8795; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+        This is what makes Iris proactive. Without this step, you have to reach out to her. With it, she reaches out to you — morning, midday, and evening — automatically.
+      </p>
+
+      <div class="step-card">
+        <p class="step-title">Find your Iris folder path</p>
+        <p>In Terminal, type this command to print the full path to your Iris folder:</p>
+        <div class="code-block">pwd</div>
+        <p style="margin-top: 10px;">Copy that output. It will look something like: <code style="color: #a882f0;">/Users/yourname/Desktop/iris-product</code></p>
+        <p style="margin-top: 8px;">You'll need to replace <code style="color: #a882f0;">REPLACE_WITH_FULL_PATH</code> in the commands below with this value.</p>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Create the morning check-in job</p>
+        <p>Run this in Terminal (replacing the path with your actual path):</p>
+        <div class="code-block">
+          cat &gt; ~/Library/LaunchAgents/com.iris.checkin.morning.plist &lt;&lt; 'EOF'<br />
+          &lt;?xml version="1.0" encoding="UTF-8"?&gt;<br />
+          &lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;<br />
+          &lt;plist version="1.0"&gt;<br />
+          &lt;dict&gt;<br />
+          &nbsp;&nbsp;&lt;key&gt;Label&lt;/key&gt;<br />
+          &nbsp;&nbsp;&lt;string&gt;com.iris.checkin.morning&lt;/string&gt;<br />
+          &nbsp;&nbsp;&lt;key&gt;ProgramArguments&lt;/key&gt;<br />
+          &nbsp;&nbsp;&lt;array&gt;<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&lt;string&gt;REPLACE_WITH_FULL_PATH/.venv/bin/python3&lt;/string&gt;<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&lt;string&gt;REPLACE_WITH_FULL_PATH/.claude/skills/iris-telegram/scripts/iris_checkin.py&lt;/string&gt;<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&lt;string&gt;--type&lt;/string&gt;<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&lt;string&gt;morning&lt;/string&gt;<br />
+          &nbsp;&nbsp;&lt;/array&gt;<br />
+          &nbsp;&nbsp;&lt;key&gt;StartCalendarInterval&lt;/key&gt;<br />
+          &nbsp;&nbsp;&lt;dict&gt;<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&lt;key&gt;Hour&lt;/key&gt;<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&lt;integer&gt;8&lt;/integer&gt;<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&lt;key&gt;Minute&lt;/key&gt;<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&lt;integer&gt;0&lt;/integer&gt;<br />
+          &nbsp;&nbsp;&lt;/dict&gt;<br />
+          &lt;/dict&gt;<br />
+          &lt;/plist&gt;<br />
+          EOF
+        </div>
+        <p style="margin-top: 10px;">Then load it:</p>
+        <div class="code-block">launchctl load ~/Library/LaunchAgents/com.iris.checkin.morning.plist</div>
+        <div class="note">
+          Add an evening check-in by repeating the same steps with a file named <code>com.iris.checkin.evening.plist</code>, changing the Hour to <code>20</code> and the --type to <code>evening</code>.
+        </div>
+      </div>
+
+      <div class="step-card">
+        <p class="step-title">Test it (optional but recommended)</p>
+        <p>Run this to send a real check-in message right now:</p>
+        <div class="code-block">
+          source .venv/bin/activate<br />
+          python3 .claude/skills/iris-telegram/scripts/iris_checkin.py --type morning
+        </div>
+        <p style="margin-top: 10px;">You should get a Telegram message from Iris within a few seconds.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- PART 7: BACKGROUND SERVICE -->
+    <div class="section">
+      <div class="section-label">
+        <span class="section-number">7</span>
+        <span class="section-title">Run Iris in the Background <span class="section-desc">~2 min — recommended</span></span>
+      </div>
+
+      <p style="color: #8a8795; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+        Right now, Iris only responds when that Terminal window is open. This step makes her run in the background automatically — she starts when your Mac starts and stays running without you doing anything.
+      </p>
+
+      <div class="step-card">
+        <p class="step-title">Create the background service</p>
+        <p>Run this in Terminal (replacing the path):</p>
+        <div class="code-block">
+          cat &gt; ~/Library/LaunchAgents/com.iris.bot.plist &lt;&lt; 'EOF'<br />
+          &lt;?xml version="1.0" encoding="UTF-8"?&gt;<br />
+          &lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;<br />
+          &lt;plist version="1.0"&gt;<br />
+          &lt;dict&gt;<br />
+          &nbsp;&nbsp;&lt;key&gt;Label&lt;/key&gt;<br />
+          &nbsp;&nbsp;&lt;string&gt;com.iris.bot&lt;/string&gt;<br />
+          &nbsp;&nbsp;&lt;key&gt;ProgramArguments&lt;/key&gt;<br />
+          &nbsp;&nbsp;&lt;array&gt;<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&lt;string&gt;REPLACE_WITH_FULL_PATH/.venv/bin/python3&lt;/string&gt;<br />
+          &nbsp;&nbsp;&nbsp;&nbsp;&lt;string&gt;REPLACE_WITH_FULL_PATH/.claude/skills/iris-telegram/scripts/iris_bot.py&lt;/string&gt;<br />
+          &nbsp;&nbsp;&lt;/array&gt;<br />
+          &nbsp;&nbsp;&lt;key&gt;KeepAlive&lt;/key&gt;<br />
+          &nbsp;&nbsp;&lt;true/&gt;<br />
+          &nbsp;&nbsp;&lt;key&gt;RunAtLoad&lt;/key&gt;<br />
+          &nbsp;&nbsp;&lt;true/&gt;<br />
+          &lt;/dict&gt;<br />
+          &lt;/plist&gt;<br />
+          EOF<br />
+          <br />
+          launchctl load ~/Library/LaunchAgents/com.iris.bot.plist
+        </div>
+        <p style="margin-top: 10px;">After this, you can close the Terminal window with iris_bot.py running. Iris will keep responding in the background.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- COMMANDS CHEAT SHEET -->
+    <div class="section">
+      <div class="section-label">
+        <span style="color: #8a8795; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;">Daily Command Reference</span>
+      </div>
+
+      <p style="color: #8a8795; font-size: 14px; margin-bottom: 16px; line-height: 1.6;">
+        These are the commands you'll use every day. You can also just talk to Iris in plain English and she'll respond in character.
+      </p>
+
+      <table class="commands-table" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <th width="35%">You type</th>
+          <th>What happens</th>
+        </tr>
+        <tr>
+          <td><span class="cmd">done 1</span></td>
+          <td class="cmd-desc">Marks commitment #1 as complete. Use the number from your list.</td>
+        </tr>
+        <tr>
+          <td><span class="cmd">done gym</span></td>
+          <td class="cmd-desc">Marks a commitment by keyword instead of number.</td>
+        </tr>
+        <tr>
+          <td><span class="cmd">skip 2</span></td>
+          <td class="cmd-desc">Logs commitment #2 as skipped. She'll clock it. Don't try to hide skips from her.</td>
+        </tr>
+        <tr>
+          <td><span class="cmd">list</span></td>
+          <td class="cmd-desc">Shows all your open commitments with their numbers.</td>
+        </tr>
+        <tr>
+          <td><span class="cmd">status</span></td>
+          <td class="cmd-desc">Shows your daily score, completion streak, and current accountability level.</td>
+        </tr>
+        <tr>
+          <td><span class="cmd">add: go to the gym</span></td>
+          <td class="cmd-desc">Logs a new commitment. The colon and space are required.</td>
+        </tr>
+        <tr>
+          <td><span class="cmd">help</span></td>
+          <td class="cmd-desc">Shows the full command reference inside Telegram.</td>
+        </tr>
+        <tr>
+          <td><span class="cmd">anything else</span></td>
+          <td class="cmd-desc">Iris responds in character. You can have a real conversation with her.</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- WHAT TO EXPECT -->
+    <div class="section">
+      <div class="section-label">
+        <span style="color: #8a8795; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;">What to Expect Going Forward</span>
+      </div>
+
+      <div class="expect-grid">
+        <div class="expect-item">
+          <span class="expect-icon">📬</span>
+          <div>
+            <strong>3 check-ins per day</strong>
+            <p>Morning, midday, and evening — at the times you set. She reaches out to you. You don't have to remember to check in.</p>
+          </div>
+        </div>
+        <div class="expect-item">
+          <span class="expect-icon">📈</span>
+          <div>
+            <strong>Tone that adjusts to your behavior</strong>
+            <p>New users start at Level 1 (warm, encouraging). Her tone escalates based on your 7-day completion rate — not her mood. She never exceeds the max level you set during onboarding.</p>
+          </div>
+        </div>
+        <div class="expect-item">
+          <span class="expect-icon">🧠</span>
+          <div>
+            <strong>Memory that actually works</strong>
+            <p>Iris remembers everything you tell her — facts, patterns, excuses, wins. She uses dual-layer memory (keyword + semantic) and she'll bring things up when they're relevant. You can't hide patterns from her.</p>
+          </div>
+        </div>
+        <div class="expect-item">
+          <span class="expect-icon">🔄</span>
+          <div>
+            <strong>Patterns get called out</strong>
+            <p>If you skip the gym every Monday, she'll name it. If you always say "I'll do it tomorrow" about the same thing, she'll quote it back to you. This is the feature, not the bug.</p>
+          </div>
+        </div>
+        <div class="expect-item">
+          <span class="expect-icon">📊</span>
+          <div>
+            <strong>Weekly summaries</strong>
+            <p>Ask for your weekly summary anytime with "weekly summary." She gives you the honest version of your week — where you showed up, where you didn't, and what the pattern actually says.</p>
+          </div>
+        </div>
+        <div class="expect-item">
+          <span class="expect-icon">⚙️</span>
+          <div>
+            <strong>Settings you can change anytime</strong>
+            <p>Want to change your check-in times, intensity level, or wake/sleep schedule? Just tell her in plain English. She'll update her calibration.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- FAQ / TROUBLESHOOTING -->
+    <div class="section">
+      <div class="section-label">
+        <span style="color: #8a8795; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;">Common Questions</span>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">Iris isn't responding to my messages.</p>
+        <p class="faq-a">Make sure <code>iris_bot.py</code> is running (check your Terminal or confirm the background service is loaded). Also verify your bot token is correctly entered in <code>.env</code> with no extra spaces.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">I get a "ModuleNotFoundError" or missing package error.</p>
+        <p class="faq-a">You're running outside the virtual environment. Run <code>source .venv/bin/activate</code> first, then try again. You need to do this every time you open a new Terminal session and run Iris manually.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">I see "TELEGRAM_CHAT_ID not set."</p>
+        <p class="faq-a">Open Telegram, find your bot, and send it any message. Iris saves your chat ID automatically after your first message. This is why you must message the bot before check-ins will work.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">Check-ins aren't coming through.</p>
+        <p class="faq-a">Three possible causes: (1) You haven't sent Iris a first message yet, so your chat ID isn't saved. (2) The launchd plist has the wrong path — make sure it points to <code>.venv/bin/python3</code> inside your Iris folder, not <code>/usr/bin/python3</code>. (3) Test it manually with <code>python3 .claude/skills/iris-telegram/scripts/iris_checkin.py --type morning</code>.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">I closed Terminal and now Iris won't respond.</p>
+        <p class="faq-a">If you haven't set up the background service yet (Part 7), you'll need to restart the bot: <code>source .venv/bin/activate</code> then <code>python3 .claude/skills/iris-telegram/scripts/iris_bot.py</code>. Set up the background service to avoid this.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">The bot username I wanted is already taken.</p>
+        <p class="faq-a">Bot usernames are globally unique on Telegram. Add something personal to make it unique — your name, initials, or a random word. As long as it ends in <code>_bot</code>, it works.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">Can I use Iris on Windows?</p>
+        <p class="faq-a">Not with this version. The automatic check-in scheduling uses macOS's launchd. You can still run the bot manually on Windows, but the scheduled check-ins won't work without modification.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">How much does the Anthropic API cost?</p>
+        <p class="faq-a">Very little. Iris uses Claude Haiku for quick replies, which is one of the cheapest models available. Typical daily usage costs a few cents. You can monitor your usage at console.anthropic.com.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">I want to reset everything and start fresh.</p>
+        <p class="faq-a">Delete the files in the <code>data/</code> folder inside your Iris directory. That clears all commitments, memory, and calibration. The next time you message the bot, Iris will treat you as a new user and restart onboarding.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">What if I want to add more skills later?</p>
+        <p class="faq-a">Iris is built to grow with you. She ships with 18 skills, but you can add new ones anytime. If you need Iris to handle something she doesn't do yet — a specific workflow, a new tool, a recurring process — just tell her: "Create a skill for [describe what you need]." She'll build it, add it to her skill set, and it works alongside everything she already knows. Your version of Iris becomes more capable over time, tailored to exactly how you work.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">Something isn't working and it's not listed here.</p>
+        <p class="faq-a">Email support at <a href="mailto:support@example.com" style="color: #a882f0;">support@example.com</a> with what happened, what you tried, and any error messages from Terminal.</p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p>You signed up for Iris. We're glad you're here.</p>
+    <p>
+      Questions? <a href="mailto:support@example.com">support@example.com</a>
+    </p>
+    <p style="margin-top: 16px; font-size: 12px;">
+      Iris · AI Accountability Coach · <a href="#">Unsubscribe</a>
+    </p>
+  </div>
+
+</div>
+</div>
+</body>
+</html>

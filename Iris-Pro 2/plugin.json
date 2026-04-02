@@ -1,0 +1,49 @@
+{
+  "name": "ai-os",
+  "version": "1.0.0",
+  "description": "Iris — AI accountability coach with 18 skills, 3 agents, 3-tier memory, and automation hooks.",
+  "author": "Tiffany Chau",
+  "license": "MIT",
+  "skills": [
+    "iris-setup",
+    "research",
+    "content-writer",
+    "meeting-prep",
+    "email-assistant",
+    "weekly-review",
+    "task-manager",
+    "skill-creator",
+    "research-lead",
+    "content-pipeline",
+    "email-digest",
+    "gamma-slides",
+    "build-website",
+    "build-app",
+    "memory",
+    "telegram",
+    "iris-accountability-engine",
+    "plugin-builder"
+  ],
+  "agents": [
+    "researcher",
+    "content-writer",
+    "code-reviewer"
+  ],
+  "hooks": {
+    "Stop": ["hooks/memory_capture.py"],
+    "PreToolUse": ["hooks/guardrail_check.py"],
+    "PostToolUse": ["hooks/validate_output.py"]
+  },
+  "requires": {
+    "claude-code": ">=1.0.0",
+    "python": ">=3.9"
+  },
+  "keywords": [
+    "ai-os",
+    "business-automation",
+    "skills",
+    "agents",
+    "memory",
+    "hooks"
+  ]
+}

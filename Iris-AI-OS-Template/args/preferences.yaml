@@ -1,0 +1,20 @@
+# AI OS — Runtime Preferences
+# Read by Claude at skill execution time (not imported by scripts).
+# The iris-setup wizard will update this file during configuration.
+
+# General
+timezone: "America/New_York"
+date_format: "YYYY-MM-DD"
+
+# Model routing defaults
+default_model: "opus"           # For complex reasoning
+automation_model: "sonnet"      # For routine automation skills
+quick_model: "haiku"            # For simple formatting/classification
+
+# Content defaults
+content_platforms: []             # Set during setup — e.g. ["instagram", "linkedin", "blog"]
+post_length: "medium"           # short (~300 chars), medium (~600 chars), long (~1200 chars)
+
+# Communication
+confirm_before_sending: true    # Always confirm before external communications
+verbose_output: false           # Detailed vs concise output

@@ -1,0 +1,15 @@
+[Unit]
+Description=IRIS Core Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/iris-core
+ExecStart=/opt/iris-core/venv/bin/python3 bot.py
+Restart=always
+RestartSec=10
+EnvironmentFile=/opt/iris-core/.env
+
+[Install]
+WantedBy=multi-user.target
