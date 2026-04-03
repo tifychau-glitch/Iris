@@ -197,23 +197,60 @@ async def _try_extract_commitment(user_id: int, user_text: str, iris_reply: str)
     Heuristic: if IRIS's reply contains "I'll check in" or similar,
     try to extract the commitment and schedule a check-in.
     """
-    check_in_patterns = [
-        r"check in (?:at|around|by) (\d{1,2}(?::\d{2})?\s*(?:am|pm|AM|PM)?)",
-        r"I'll (?:hit you up|follow up|check) (?:at|around) (\d{1,2}(?::\d{2})?\s*(?:am|pm|AM|PM)?)",
+    reply_lower = iris_reply.lower()
+
+    # Skip if no check-in language at all
+    if not any(phrase in reply_lower for phrase in ["check in", "check back", "follow up", "hit you up"]):
+        return
+
+    # Try relative time first: "in 30 minutes", "in 2 hours", "in an hour"
+    relative_patterns = [
+        r"(?:check(?:\s*(?:in|back))?|follow up|hit you up)\s+(?:in\s+)?(\d+)\s*(min(?:ute)?s?|hours?|hrs?)",
+        r"in\s+(\d+)\s*(min(?:ute)?s?|hours?|hrs?)",
+        r"(?:check(?:\s*(?:in|back))?|follow up)\s+in\s+an?\s+(hour)",
     ]
 
-    for pattern in check_in_patterns:
-        match = re.search(pattern, iris_reply)
+    for pattern in relative_patterns:
+        match = re.search(pattern, reply_lower)
+        if match:
+            groups = match.groups()
+            # Handle "in an hour" case
+            if groups[-1] == "hour" and len(groups) == 1:
+                minutes = 60
+            else:
+                amount = int(groups[0])
+                unit = groups[1]
+                if unit.startswith("h"):
+                    minutes = amount * 60
+                else:
+                    minutes = amount
+
+            check_in_time = datetime.now() + timedelta(minutes=minutes)
+            task = user_text[:200]
+            db.add_commitment(user_id, task, check_in_time)
+            logger.info(
+                f"Commitment stored for user {user_id}: "
+                f"'{task}' -- check-in in {minutes}min at {check_in_time.strftime('%H:%M')}"
+            )
+            return
+
+    # Try absolute time: "at 3pm", "at 3:30 PM"
+    absolute_patterns = [
+        r"(?:check(?:\s*(?:in|back))?|follow up|hit you up)\s+(?:at|around|by)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))",
+        r"at\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))",
+    ]
+
+    for pattern in absolute_patterns:
+        match = re.search(pattern, reply_lower)
         if match:
             time_str = match.group(1).strip()
             check_in_time = _parse_time(time_str)
             if check_in_time:
-                # Use the user's message as the task description
-                task = user_text[:200]  # Cap task length
+                task = user_text[:200]
                 db.add_commitment(user_id, task, check_in_time)
                 logger.info(
                     f"Commitment stored for user {user_id}: "
-                    f"'{task}' at {check_in_time}"
+                    f"'{task}' at {check_in_time.strftime('%H:%M')}"
                 )
                 return
 
@@ -221,33 +258,26 @@ async def _try_extract_commitment(user_id: int, user_text: str, iris_reply: str)
 def _parse_time(time_str: str) -> datetime | None:
     """Parse a time string like '3pm', '3:30 PM' into today's or tomorrow's datetime."""
     now = datetime.now()
-    formats = ["%I%p", "%I:%M%p", "%I %p", "%I:%M %p"]
 
     time_str_clean = time_str.replace(" ", "").upper()
-    parsed_time = None
 
     for fmt in ["%I%p", "%I:%M%p"]:
         try:
             parsed_time = datetime.strptime(time_str_clean, fmt).time()
-            break
+            result = now.replace(
+                hour=parsed_time.hour,
+                minute=parsed_time.minute,
+                second=0,
+                microsecond=0,
+            )
+            # If the time already passed today, schedule for tomorrow
+            if result <= now:
+                result += timedelta(days=1)
+            return result
         except ValueError:
             continue
 
-    if not parsed_time:
-        return None
-
-    result = now.replace(
-        hour=parsed_time.hour,
-        minute=parsed_time.minute,
-        second=0,
-        microsecond=0,
-    )
-
-    # If the time already passed today, schedule for tomorrow
-    if result <= now:
-        result += timedelta(days=1)
-
-    return result
+    return None
 
 
 # ---- Flask Web Signup Form ----
