@@ -62,7 +62,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(
                 "Hey. I'm IRIS.\n\n"
                 "I track what you say you'll do -- and whether you actually do it.\n\n"
-                "What's something you've been putting off?"
+                "What needs to get done?"
             )
             # Start a new session
             db.create_session(user_id, "accountability")

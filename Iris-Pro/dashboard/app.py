@@ -1,11 +1,23 @@
 """Project Dashboard - Simple local Flask server."""
 
 import json
-from datetime import datetime
+import os
+import sqlite3
+from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_from_directory
 from db import get_db, init_db
 
 app = Flask(__name__, static_folder=".", static_url_path="")
+
+ACCOUNTABILITY_DB = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "iris_accountability.db")
+
+
+def get_accountability_db():
+    if not os.path.exists(ACCOUNTABILITY_DB):
+        return None
+    conn = sqlite3.connect(ACCOUNTABILITY_DB)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 VALID_STATUSES = ["idea", "not_started", "in_progress", "blocked", "done"]
 
@@ -231,6 +243,107 @@ def delete_task(task_id):
     conn.commit()
     conn.close()
     return jsonify({"ok": True})
+
+
+@app.route("/api/accountability", methods=["GET"])
+def accountability_metrics():
+    conn = get_accountability_db()
+    if not conn:
+        return jsonify({"available": False, "message": "No accountability data yet"})
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+    two_weeks_ago = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")
+
+    # Self-trust score (14-day)
+    made_14d = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ?", (two_weeks_ago,)
+    ).fetchone()[0]
+    kept_14d = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND completed = 1", (two_weeks_ago,)
+    ).fetchone()[0]
+    trust_score = round(kept_14d / made_14d, 2) if made_14d > 0 else 0.0
+
+    # This week: promises made vs kept
+    made_week = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ?", (week_ago,)
+    ).fetchone()[0]
+    kept_week = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND completed = 1", (week_ago,)
+    ).fetchone()[0]
+    broken_week = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND skipped = 1", (week_ago,)
+    ).fetchone()[0]
+
+    # Current streak
+    scores = conn.execute(
+        "SELECT completion_rate FROM daily_scores ORDER BY date DESC LIMIT 30"
+    ).fetchall()
+    streak = 0
+    for s in scores:
+        if s["completion_rate"] >= 0.80:
+            streak += 1
+        else:
+            break
+
+    # Accountability level
+    week_scores = conn.execute(
+        "SELECT completion_rate FROM daily_scores WHERE date >= ?", (week_ago,)
+    ).fetchall()
+    rates = [r["completion_rate"] for r in week_scores]
+    avg_rate = sum(rates) / len(rates) if rates else 0
+    if avg_rate >= 0.80:
+        level = 1
+    elif avg_rate >= 0.60:
+        level = 2
+    elif avg_rate >= 0.40:
+        level = 3
+    elif avg_rate >= 0.20:
+        level = 4
+    else:
+        level = 5
+
+    level_names = {1: "Sweet Iris", 2: "Subtle Side-Eye", 3: "Passive Aggressive",
+                   4: "Direct Confrontation", 5: "Full Drill Sergeant"}
+
+    # Top excuse category
+    excuse_row = conn.execute(
+        """SELECT excuse_category, COUNT(*) as cnt FROM commitments
+           WHERE due_date >= ? AND excuse_category IS NOT NULL
+           GROUP BY excuse_category ORDER BY cnt DESC LIMIT 1""",
+        (week_ago,)
+    ).fetchone()
+    top_excuse = excuse_row["excuse_category"] if excuse_row else None
+
+    # Ghost days (days with no interaction in last 7)
+    interaction_days = conn.execute(
+        """SELECT COUNT(DISTINCT date(created_at)) FROM interactions
+           WHERE created_at >= ?""",
+        (week_ago,)
+    ).fetchone()[0]
+    ghost_days = 7 - interaction_days
+
+    # Daily breakdown for chart (last 7 days)
+    daily = conn.execute(
+        "SELECT date, completion_rate, commitments_made, commitments_completed FROM daily_scores WHERE date >= ? ORDER BY date",
+        (week_ago,)
+    ).fetchall()
+    daily_data = [dict(d) for d in daily]
+
+    conn.close()
+    return jsonify({
+        "available": True,
+        "self_trust_score": trust_score,
+        "streak": streak,
+        "accountability_level": level,
+        "level_name": level_names.get(level, "Unknown"),
+        "promises_made_week": made_week,
+        "promises_kept_week": kept_week,
+        "promises_broken_week": broken_week,
+        "top_excuse": top_excuse,
+        "ghost_days": ghost_days,
+        "daily_data": daily_data,
+    })
 
 
 if __name__ == "__main__":

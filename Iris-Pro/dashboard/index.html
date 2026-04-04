@@ -372,8 +372,83 @@
     padding: 24px 8px;
   }
 
+  /* Accountability Panel */
+  .acc-panel {
+    padding: 16px 32px;
+    border-bottom: 1px solid #222;
+  }
+
+  .acc-stats {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .acc-stat {
+    background: #181818;
+    border-radius: 10px;
+    padding: 14px 20px;
+    min-width: 120px;
+    flex: 1;
+  }
+
+  .acc-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.1;
+  }
+
+  .acc-stat-slash {
+    font-size: 18px;
+    color: #555;
+    margin: 0 2px;
+  }
+
+  .acc-stat-label {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+
+  .acc-trust .acc-stat-value { color: #4ade80; }
+
+  .acc-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 48px;
+    margin-top: 14px;
+    padding: 0 4px;
+  }
+
+  .acc-bar-day {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .acc-bar {
+    width: 100%;
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    transition: height 0.3s;
+  }
+
+  .acc-bar-label {
+    font-size: 9px;
+    color: #555;
+  }
+
   @media (max-width: 900px) {
     .board { grid-template-columns: 1fr; }
+    .acc-stats { gap: 8px; }
+    .acc-stat { min-width: 90px; padding: 10px 14px; }
+    .acc-stat-value { font-size: 22px; }
   }
 </style>
 </head>
@@ -389,6 +464,37 @@
     <button class="add-btn" onclick="openNewModal()">+ New Project</button>
   </div>
 </header>
+
+<!-- Accountability Panel -->
+<div class="acc-panel" id="accPanel" style="display:none">
+  <div class="acc-stats">
+    <div class="acc-stat acc-trust">
+      <div class="acc-stat-value" id="accTrust">--</div>
+      <div class="acc-stat-label">Self-Trust</div>
+    </div>
+    <div class="acc-stat">
+      <div class="acc-stat-value" id="accStreak">--</div>
+      <div class="acc-stat-label">Streak</div>
+    </div>
+    <div class="acc-stat">
+      <div class="acc-stat-value" id="accLevel">--</div>
+      <div class="acc-stat-label" id="accLevelName">Level</div>
+    </div>
+    <div class="acc-stat">
+      <div class="acc-stat-value"><span id="accKept">--</span><span class="acc-stat-slash">/</span><span id="accMade">--</span></div>
+      <div class="acc-stat-label">Kept / Made</div>
+    </div>
+    <div class="acc-stat">
+      <div class="acc-stat-value" id="accExcuse">--</div>
+      <div class="acc-stat-label">Top Excuse</div>
+    </div>
+    <div class="acc-stat">
+      <div class="acc-stat-value" id="accGhost">--</div>
+      <div class="acc-stat-label">Ghost Days</div>
+    </div>
+  </div>
+  <div class="acc-bar-chart" id="accChart"></div>
+</div>
 
 <div class="board" id="board"></div>
 
@@ -678,9 +784,65 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// --- Accountability Panel ---
+
+async function fetchAccountability() {
+  try {
+    const res = await fetch('/api/accountability');
+    const data = await res.json();
+    if (!data.available) {
+      document.getElementById('accPanel').style.display = 'none';
+      return;
+    }
+    document.getElementById('accPanel').style.display = 'block';
+
+    const trustPct = Math.round(data.self_trust_score * 100);
+    const trustEl = document.getElementById('accTrust');
+    trustEl.textContent = trustPct + '%';
+    trustEl.style.color = trustPct >= 70 ? '#4ade80' : trustPct >= 40 ? '#fbbf24' : '#f87171';
+
+    document.getElementById('accStreak').textContent = data.streak + 'd';
+    document.getElementById('accLevel').textContent = data.accountability_level;
+    document.getElementById('accLevelName').textContent = data.level_name;
+    document.getElementById('accKept').textContent = data.promises_kept_week;
+    document.getElementById('accMade').textContent = data.promises_made_week;
+    document.getElementById('accExcuse').textContent = data.top_excuse || 'none';
+    document.getElementById('accGhost').textContent = data.ghost_days;
+
+    // Render mini bar chart
+    renderAccChart(data.daily_data);
+  } catch (e) {
+    document.getElementById('accPanel').style.display = 'none';
+  }
+}
+
+function renderAccChart(dailyData) {
+  const chart = document.getElementById('accChart');
+  if (!dailyData || dailyData.length === 0) {
+    chart.innerHTML = '<span style="color:#444;font-size:11px;">No daily data yet</span>';
+    return;
+  }
+
+  const maxMade = Math.max(...dailyData.map(d => d.commitments_made), 1);
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  chart.innerHTML = dailyData.map(d => {
+    const dt = new Date(d.date + 'T12:00:00');
+    const dayName = days[dt.getDay()];
+    const rate = d.completion_rate;
+    const height = Math.max(4, Math.round((d.commitments_made / maxMade) * 40));
+    const color = rate >= 0.8 ? '#4ade80' : rate >= 0.5 ? '#fbbf24' : rate > 0 ? '#f87171' : '#333';
+    return `<div class="acc-bar-day">
+      <div class="acc-bar" style="height:${height}px;background:${color}"></div>
+      <div class="acc-bar-label">${dayName}</div>
+    </div>`;
+  }).join('');
+}
+
 // Poll every 3 seconds for live updates
 fetchProjects();
-pollTimer = setInterval(fetchProjects, 3000);
+fetchAccountability();
+pollTimer = setInterval(() => { fetchProjects(); fetchAccountability(); }, 3000);
 </script>
 
 </body>

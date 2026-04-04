@@ -15,6 +15,10 @@ Commands:
   weekly_summary    7-day stats, streaks, and patterns
   streak            Current streak info for active goals
   list_commitments  Show commitments (today, pending, or all)
+  self_trust_score  Rolling 14-day follow-through percentage with trend
+  promise_vs_proof  Full promise vs proof report
+  end_of_day        Structured end-of-day summary for capture
+  log_interaction   Record a user interaction timestamp
 """
 
 import argparse
@@ -25,6 +29,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent.parent.parent.parent.parent / "data" / "iris_accountability.db"
+TASKS_DB_PATH = Path(__file__).parent.parent.parent.parent.parent / "data" / "tasks.db"
 
 # Iris personality at each level
 LEVEL_PROFILES = {
@@ -95,10 +100,14 @@ def get_connection():
             recurring INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now')),
             due_date TEXT,
+            due_time TEXT,
             completed INTEGER DEFAULT 0,
             completed_at TEXT,
             skipped INTEGER DEFAULT 0,
-            skip_reason TEXT
+            skip_reason TEXT,
+            excuse_category TEXT,
+            last_followup_sent TEXT,
+            source TEXT DEFAULT 'manual'
         );
 
         CREATE TABLE IF NOT EXISTS daily_scores (
@@ -122,21 +131,65 @@ def get_connection():
             updated_at TEXT DEFAULT (datetime('now'))
         );
 
+        CREATE TABLE IF NOT EXISTS interactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT NOT NULL DEFAULT 'message',
+            source TEXT DEFAULT 'telegram',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS interventions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT NOT NULL,
+            tier INTEGER DEFAULT 1,
+            message_sent TEXT,
+            commitment_id INTEGER,
+            user_responded INTEGER DEFAULT 0,
+            response_time_minutes INTEGER,
+            resulted_in_action INTEGER DEFAULT 0,
+            accountability_level INTEGER,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
         INSERT OR IGNORE INTO user_calibration (id) VALUES (1);
     """)
+
+    # Migrations for existing databases — add columns if they don't exist
+    _migrate_schema(conn)
     conn.commit()
     return conn
+
+
+def _migrate_schema(conn):
+    """Add new columns to existing databases without losing data."""
+    cursor = conn.execute("PRAGMA table_info(commitments)")
+    existing_cols = {row[1] for row in cursor.fetchall()}
+
+    migrations = [
+        ("due_time", "TEXT"),
+        ("excuse_category", "TEXT"),
+        ("last_followup_sent", "TEXT"),
+        ("source", "TEXT DEFAULT 'manual'"),
+    ]
+    for col_name, col_type in migrations:
+        if col_name not in existing_cols:
+            conn.execute(f"ALTER TABLE commitments ADD COLUMN {col_name} {col_type}")
+
+    conn.commit()
 
 
 def add_commitment(args):
     """Log a new commitment."""
     conn = get_connection()
+    due_date = args.due or datetime.now().strftime("%Y-%m-%d")
+    due_time = getattr(args, "due_time", None)
+    source = getattr(args, "source", "manual")
     conn.execute(
-        """INSERT INTO commitments (description, category, due_date, recurring)
-           VALUES (?, ?, ?, ?)""",
+        """INSERT INTO commitments (description, category, due_date, due_time, recurring, source)
+           VALUES (?, ?, ?, ?, ?, ?)""",
         (args.description, args.category or "general",
-         args.due or datetime.now().strftime("%Y-%m-%d"),
-         1 if args.recurring else 0)
+         due_date, due_time,
+         1 if args.recurring else 0, source)
     )
     conn.commit()
     cid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
@@ -145,8 +198,10 @@ def add_commitment(args):
         "status": "added",
         "id": cid,
         "description": args.description,
-        "due_date": args.due or datetime.now().strftime("%Y-%m-%d"),
+        "due_date": due_date,
+        "due_time": due_time,
         "recurring": bool(args.recurring),
+        "source": source,
     }))
 
 
@@ -166,11 +221,12 @@ def complete_commitment(args):
 
 
 def skip_commitment(args):
-    """Mark a commitment as skipped with a reason."""
+    """Mark a commitment as skipped with a reason and excuse category."""
     conn = get_connection()
+    excuse_cat = getattr(args, "excuse_category", None)
     conn.execute(
-        "UPDATE commitments SET skipped = 1, skip_reason = ? WHERE id = ?",
-        (args.reason or "no reason given", args.id)
+        "UPDATE commitments SET skipped = 1, skip_reason = ?, excuse_category = ? WHERE id = ?",
+        (args.reason or "no reason given", excuse_cat, args.id)
     )
     conn.commit()
     row = conn.execute("SELECT description FROM commitments WHERE id = ?", (args.id,)).fetchone()
@@ -181,6 +237,7 @@ def skip_commitment(args):
         "id": args.id,
         "description": desc,
         "reason": args.reason or "no reason given",
+        "excuse_category": excuse_cat,
     }))
 
 
@@ -483,6 +540,204 @@ def list_commitments(args):
     print(json.dumps({"commitments": commitments, "count": len(commitments)}, indent=2))
 
 
+def self_trust_score(args):
+    """Rolling 14-day follow-through percentage with trend."""
+    conn = get_connection()
+    today = datetime.now().strftime("%Y-%m-%d")
+    two_weeks_ago = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")
+    one_week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+
+    # Last 14 days: promises made vs kept
+    made_14d = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND due_date <= ?",
+        (two_weeks_ago, today)
+    ).fetchone()[0]
+
+    kept_14d = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND due_date <= ? AND completed = 1",
+        (two_weeks_ago, today)
+    ).fetchone()[0]
+
+    score = round(kept_14d / made_14d, 2) if made_14d > 0 else 0.0
+
+    # Trend: compare last 7 days to previous 7 days
+    kept_recent = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND due_date <= ? AND completed = 1",
+        (one_week_ago, today)
+    ).fetchone()[0]
+    made_recent = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND due_date <= ?",
+        (one_week_ago, today)
+    ).fetchone()[0]
+
+    kept_prior = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND due_date < ? AND completed = 1",
+        (two_weeks_ago, one_week_ago)
+    ).fetchone()[0]
+    made_prior = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND due_date < ?",
+        (two_weeks_ago, one_week_ago)
+    ).fetchone()[0]
+
+    rate_recent = kept_recent / made_recent if made_recent > 0 else 0
+    rate_prior = kept_prior / made_prior if made_prior > 0 else 0
+
+    if rate_recent > rate_prior + 0.05:
+        trend = "up"
+    elif rate_recent < rate_prior - 0.05:
+        trend = "down"
+    else:
+        trend = "flat"
+
+    conn.close()
+    print(json.dumps({
+        "self_trust_score": score,
+        "trend": trend,
+        "promises_made_14d": made_14d,
+        "promises_kept_14d": kept_14d,
+        "recent_7d_rate": round(rate_recent, 2),
+        "prior_7d_rate": round(rate_prior, 2),
+    }, indent=2))
+
+
+def promise_vs_proof(args):
+    """Full promise vs proof report."""
+    conn = get_connection()
+    today = datetime.now().strftime("%Y-%m-%d")
+    one_week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+    two_weeks_ago = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")
+
+    # This week's numbers
+    made = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND due_date <= ?",
+        (one_week_ago, today)
+    ).fetchone()[0]
+    kept = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND due_date <= ? AND completed = 1",
+        (one_week_ago, today)
+    ).fetchone()[0]
+    broken = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND due_date <= ? AND completed = 0 AND skipped = 1",
+        (one_week_ago, today)
+    ).fetchone()[0]
+    unaddressed = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND due_date < ? AND completed = 0 AND skipped = 0",
+        (one_week_ago, today)
+    ).fetchone()[0]
+
+    # Top excuse category
+    excuse_rows = conn.execute(
+        """SELECT excuse_category, COUNT(*) as cnt FROM commitments
+           WHERE due_date >= ? AND excuse_category IS NOT NULL
+           GROUP BY excuse_category ORDER BY cnt DESC LIMIT 3""",
+        (one_week_ago,)
+    ).fetchall()
+    top_excuses = [{"category": r["excuse_category"], "count": r["cnt"]} for r in excuse_rows]
+
+    # Most avoided category (skipped tasks by category)
+    avoided_rows = conn.execute(
+        """SELECT category, COUNT(*) as cnt FROM commitments
+           WHERE due_date >= ? AND (skipped = 1 OR (completed = 0 AND due_date < ?))
+           GROUP BY category ORDER BY cnt DESC LIMIT 3""",
+        (one_week_ago, today)
+    ).fetchall()
+    most_avoided = [{"category": r["category"], "count": r["cnt"]} for r in avoided_rows]
+
+    # Self-trust score (14-day)
+    made_14d = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ?", (two_weeks_ago,)
+    ).fetchone()[0]
+    kept_14d = conn.execute(
+        "SELECT COUNT(*) FROM commitments WHERE due_date >= ? AND completed = 1", (two_weeks_ago,)
+    ).fetchone()[0]
+    trust_score = round(kept_14d / made_14d, 2) if made_14d > 0 else 0.0
+
+    # Current level
+    week_scores = conn.execute(
+        "SELECT completion_rate FROM daily_scores WHERE date >= ?", (one_week_ago,)
+    ).fetchall()
+    rates = [r["completion_rate"] for r in week_scores]
+    cal = conn.execute("SELECT max_level FROM user_calibration WHERE id = 1").fetchone()
+    max_level = cal["max_level"] if cal else 5
+    level = calculate_level(rates, max_level)
+
+    conn.close()
+    print(json.dumps({
+        "period": f"{one_week_ago} to {today}",
+        "promises_made": made,
+        "promises_kept": kept,
+        "promises_broken": broken,
+        "promises_unaddressed": unaddressed,
+        "follow_through_rate": round(kept / made, 2) if made > 0 else 0.0,
+        "self_trust_score": trust_score,
+        "accountability_level": level,
+        "level_name": LEVEL_PROFILES[level]["name"],
+        "top_excuse_categories": top_excuses,
+        "most_avoided_categories": most_avoided,
+    }, indent=2))
+
+
+def end_of_day(args):
+    """Structured end-of-day summary for capture."""
+    conn = get_connection()
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # All today's commitments
+    rows = conn.execute(
+        "SELECT * FROM commitments WHERE due_date = ? ORDER BY completed DESC, id",
+        (today,)
+    ).fetchall()
+
+    if not rows:
+        conn.close()
+        print(json.dumps({"has_data": False, "message": "No commitments today"}))
+        return
+
+    done = [dict(r) for r in rows if r["completed"]]
+    missed = [dict(r) for r in rows if not r["completed"] and not r["skipped"]]
+    skipped = [dict(r) for r in rows if r["skipped"]]
+
+    total = len(rows)
+    completion_rate = round(len(done) / total, 2) if total > 0 else 0.0
+
+    # Calculate today's score
+    cal = conn.execute("SELECT max_level FROM user_calibration WHERE id = 1").fetchone()
+    max_level = cal["max_level"] if cal else 5
+    week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+    past_scores = conn.execute(
+        "SELECT completion_rate FROM daily_scores WHERE date >= ? AND date < ?",
+        (week_ago, today)
+    ).fetchall()
+    rates = [r["completion_rate"] for r in past_scores] + [completion_rate]
+    level = calculate_level(rates, max_level)
+
+    conn.close()
+    print(json.dumps({
+        "has_data": True,
+        "date": today,
+        "total_commitments": total,
+        "completed": [{"id": d["id"], "description": d["description"]} for d in done],
+        "missed": [{"id": d["id"], "description": d["description"]} for d in missed],
+        "skipped": [{"id": d["id"], "description": d["description"], "reason": d["skip_reason"]} for d in skipped],
+        "completion_rate": completion_rate,
+        "accountability_level": level,
+        "level_name": LEVEL_PROFILES[level]["name"],
+    }, indent=2))
+
+
+def log_interaction(args):
+    """Record a user interaction timestamp."""
+    conn = get_connection()
+    source = getattr(args, "source", "telegram")
+    conn.execute(
+        "INSERT INTO interactions (type, source) VALUES (?, ?)",
+        (getattr(args, "type", "message"), source)
+    )
+    conn.commit()
+    conn.close()
+    print(json.dumps({"status": "logged", "source": source}))
+
+
 def main():
     parser = argparse.ArgumentParser(description="Iris Accountability Engine")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -491,8 +746,10 @@ def main():
     add_p = subparsers.add_parser("add_commitment")
     add_p.add_argument("description")
     add_p.add_argument("--due")
+    add_p.add_argument("--due-time", dest="due_time")
     add_p.add_argument("--category", default="general")
     add_p.add_argument("--recurring", action="store_true")
+    add_p.add_argument("--source", default="manual")
 
     # complete
     comp_p = subparsers.add_parser("complete")
@@ -502,6 +759,9 @@ def main():
     skip_p = subparsers.add_parser("skip")
     skip_p.add_argument("id", type=int)
     skip_p.add_argument("--reason", default="")
+    skip_p.add_argument("--excuse-category", dest="excuse_category",
+                         choices=["energy", "time", "avoidance", "external",
+                                  "unclear_task", "forgot", "unaddressed"])
 
     # daily_score
     subparsers.add_parser("daily_score")
@@ -530,6 +790,20 @@ def main():
     list_p = subparsers.add_parser("list_commitments")
     list_p.add_argument("--filter", choices=["today", "pending", "overdue", "all"], default="today")
 
+    # self_trust_score
+    subparsers.add_parser("self_trust_score")
+
+    # promise_vs_proof
+    subparsers.add_parser("promise_vs_proof")
+
+    # end_of_day
+    subparsers.add_parser("end_of_day")
+
+    # log_interaction
+    log_p = subparsers.add_parser("log_interaction")
+    log_p.add_argument("--type", default="message")
+    log_p.add_argument("--source", default="telegram")
+
     args = parser.parse_args()
 
     commands = {
@@ -543,6 +817,10 @@ def main():
         "weekly_summary": weekly_summary,
         "streak": streak_info,
         "list_commitments": list_commitments,
+        "self_trust_score": self_trust_score,
+        "promise_vs_proof": promise_vs_proof,
+        "end_of_day": end_of_day,
+        "log_interaction": log_interaction,
     }
 
     commands[args.command](args)
