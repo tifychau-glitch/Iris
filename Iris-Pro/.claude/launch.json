@@ -1,0 +1,30 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Iris-Pro Dashboard",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["dashboard/app.py"],
+      "port": 5050
+    },
+    {
+      "name": "Iris-Core Bot + Signup",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["/Users/tiffanychau/Downloads/IRIS/Iris-Core/bot.py"],
+      "port": 8080
+    },
+    {
+      "name": "Telegram Handler Daemon",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["/Users/tiffanychau/Downloads/IRIS/Iris-Pro/claude/skills/telegram/scripts/telegram_handler.py"],
+      "port": 0
+    }
+    ,{
+      "name": "iris-diagram",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "7070"],
+      "port": 7070,
+      "cwd": "/Users/tiffanychau/Downloads/IRIS/Iris-Pro"
+    }
+  ]
+}
