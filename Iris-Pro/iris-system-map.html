@@ -292,7 +292,7 @@
         <li><span class="dot y"></span><span class="k">Runs on</span><span class="v">User's Mac &mdash; only when handler is on</span></li>
         <li><span class="dot g"></span><span class="k">Scope</span><span class="v">Full AIOS &mdash; all skills, memory, accountability</span></li>
         <li><span class="dot g"></span><span class="k">Ongoing</span><span class="v">No session limit, persistent relationship</span></li>
-        <li><span class="dot g"></span><span class="k">Memory</span><span class="v">3-tier: MEMORY.md + logs + Upstash Vector</span></li>
+        <li><span class="dot g"></span><span class="k">Memory</span><span class="v">3-tier: MEMORY.md + logs + Pinecone</span></li>
         <li><span class="dot g"></span><span class="k">Context</span><span class="v">Reads business profile, voice, preferences</span></li>
       </ul>
     </div>
@@ -330,7 +330,7 @@
         <ul class="props">
           <li><span class="dot g"></span><span class="k">Tier 1</span><span class="v">MEMORY.md &mdash; always loaded, curated facts</span></li>
           <li><span class="dot g"></span><span class="k">Tier 2</span><span class="v">Daily logs &mdash; memory/logs/YYYY-MM-DD.md</span></li>
-          <li><span class="dot y"></span><span class="k">Tier 3</span><span class="v">Upstash Vector + mem0 (needs API keys)</span></li>
+          <li><span class="dot y"></span><span class="k">Tier 3</span><span class="v">Pinecone + mem0 (optional, needs API key)</span></li>
           <li><span class="dot g"></span><span class="k">Data</span><span class="v">projects.db, tasks.db, accountability.db</span></li>
           <li><span class="dot g"></span><span class="k">Context</span><span class="v">my-business.md, my-voice.md, preferences.yaml</span></li>
         </ul>
@@ -408,7 +408,7 @@
       </tr>
       <tr>
         <td>Long-term memory</td>
-        <td class="col-pro">&#9989; 3-tier: MEMORY.md + daily logs + Upstash Vector (semantic search)</td>
+        <td class="col-pro">&#9989; 3-tier: MEMORY.md + daily logs + Pinecone (semantic search, optional)</td>
         <td class="col-core">&#10060; None. No vector store, no daily logs, no MEMORY.md.</td>
       </tr>
       <tr>
@@ -418,7 +418,7 @@
       </tr>
       <tr>
         <td>Telegram memory</td>
-        <td class="col-pro">&#9989; Pro bot handler feeds into mem0 + Upstash Vector</td>
+        <td class="col-pro">&#9989; Pro bot handler feeds into mem0 + Pinecone</td>
         <td class="col-core">&#9888; Last 20 messages in-memory. Lost on restart.</td>
       </tr>
     </table>
@@ -575,7 +575,7 @@
       <span class="fa">&rarr;</span>
       <span class="fn fn-local">auto_capture.py</span>
       <span class="fa">&rarr;</span>
-      <span class="fn fn-cloud">Extracts facts &rarr; Upstash Vector</span>
+      <span class="fn fn-cloud">Extracts facts &rarr; Pinecone</span>
     </div>
     <div class="flow-label" style="margin-top:8px;">Dashboard</div>
     <div class="flow-row">
@@ -595,7 +595,7 @@
       <span class="fa">&rarr;</span>
       <span class="fn fn-local">Invokes Claude Code</span>
       <span class="fa">&rarr;</span>
-      <span class="fn fn-cloud">Saves to Upstash Vector</span>
+      <span class="fn fn-cloud">Saves to Pinecone</span>
     </div>
   </div>
 
@@ -704,7 +704,7 @@
         <div style="font-size:9px;color:#555;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;padding-left:8px;">API Services</div>
         <ul class="props">
           <li><span class="dot g"></span><span class="k">Anthropic</span><span class="v">Claude via subscription (no API key)</span></li>
-          <li><span class="dot y"></span><span class="k">Upstash</span><span class="v">Vector memory (free tier, needs keys)</span></li>
+          <li><span class="dot y"></span><span class="k">Pinecone</span><span class="v">Vector memory (free tier, needs API key)</span></li>
           <li><span class="dot y"></span><span class="k">OpenAI</span><span class="v">Embeddings for mem0 (~$0.50/mo)</span></li>
           <li><span class="dot y"></span><span class="k">Telegram</span><span class="v">@IrisProBot (needs own token)</span></li>
           <li><span class="dot gr"></span><span class="k">Gamma</span><span class="v">Optional slide generation</span></li>

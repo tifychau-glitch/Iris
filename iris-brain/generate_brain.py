@@ -111,7 +111,7 @@ IRIS is an AI accountability product for solopreneurs. It closes the gap between
 **Iris Pro (runs on customer machine):**
 - Claude Code workspace (`.claude/skills/`, `context/`, `memory/`, `data/`)
 - Local dashboard at `localhost:5050` (Flask + SQLite)
-- 3-tier memory: MEMORY.md → daily logs → mem0/Upstash Vector (optional)
+- 3-tier memory: MEMORY.md → daily logs → mem0/Pinecone (optional, user-owned)
 - 25 skills, 3 subagents, hooks for safety
 - Setup wizard runs on first conversation
 
@@ -124,7 +124,7 @@ IRIS is an AI accountability product for solopreneurs. It closes the gap between
 **External dependencies:**
 - Lemon Squeezy (payments)
 - Telegram Bot API (Core)
-- Optional: Upstash Vector, OpenAI, Gmail, Slack (Pro connectors)
+- Optional: Pinecone, OpenAI, Gmail, Slack (Pro connectors)
 - Hostinger VPS (Core hosting)
 
 ---
@@ -188,6 +188,7 @@ def copy_assets():
     """Copy HTML and voice files into output/."""
     pairs = [
         (LANDING / "index.html", OUTPUT / "landing-page.html"),
+        (LANDING / "iris.png", OUTPUT / "iris.png"),
         (IRIS_PRO / "dashboard" / "index.html", OUTPUT / "dashboard-index.html"),
         (IRIS_PRO / "dashboard" / "settings.html", OUTPUT / "dashboard-settings.html"),
         (IRIS_PRO / "context" / "my-voice.md", OUTPUT / "my-voice.md"),

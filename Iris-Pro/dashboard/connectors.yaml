@@ -42,21 +42,21 @@ connectors:
         sensitive: true
     test_script: test_gmail.py
 
-  - name: upstash_vector
-    display_name: Upstash Vector
+  - name: pinecone
+    display_name: Pinecone
     category: memory
     required: false
-    description: "Long-term vector memory for cross-session recall"
+    description: "Long-term vector memory for cross-session recall (optional — you own the data)"
     fields:
-      - key: UPSTASH_VECTOR_REST_URL
-        label: REST URL
-        hint: "From console.upstash.com — starts with https://"
-        sensitive: false
-      - key: UPSTASH_VECTOR_REST_TOKEN
-        label: REST Token
-        hint: "From console.upstash.com"
+      - key: PINECONE_API_KEY
+        label: API Key
+        hint: "From app.pinecone.io — go to API Keys in the left sidebar"
         sensitive: true
-    test_script: test_upstash.py
+      - key: PINECONE_INDEX_NAME
+        label: Index Name
+        hint: "The name of the index you created in Pinecone"
+        sensitive: false
+    test_script: test_pinecone.py
 
   - name: openai
     display_name: OpenAI

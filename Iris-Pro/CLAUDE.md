@@ -218,12 +218,13 @@ open http://localhost:5050/settings
 
 Walk the user through connecting each service on the Settings page. They click each connector card, paste their credentials, hit Test, then Save. Guide them one at a time:
 
-1. **Upstash Vector** (recommended — enables cross-session memory):
-> "First — Upstash Vector. This is how I remember things long-term. Not just this conversation — months from now."
-> "Free tier works. Go to console.upstash.com, create a Vector index, and grab the REST URL and token."
-> "Click the Upstash card in Settings, paste both, and hit Test."
+1. **Pinecone** (optional — enables long-term memory across sessions):
+> Before walking through the dashboard, briefly mention it:
+> "One thing worth knowing — there's an optional add-on. If you connect Pinecone, I can remember things across sessions. Not just today — weeks from now, months from now. It's free to start, takes about two minutes, and you own the data."
+> "You don't have to do it now. You can always add it later from Settings."
 >
-> If the user skips this, that's fine — IRIS works without it, just without persistent memory across sessions. Don't block onboarding.
+> If they want to set it up: "Go to pinecone.io, create a free account, grab your API key, and create an index. Click the Pinecone card in Settings, paste the key, and hit Test."
+> If they skip: move on. Don't push it.
 
 2. **Telegram** (required — save for last, it's the capstone):
 > "Last one — Telegram. This is how I reach you when you're not here."
@@ -237,7 +238,7 @@ Walk the user through connecting each service on the Settings page. They click e
 
 #### Phase 4: Close Setup
 
-Once all three are connected:
+Once Telegram is connected (Pinecone is optional — don't gate this on it):
 
 > "We're set."
 >

@@ -467,7 +467,7 @@
           <ul class="items">
             <li><span class="dot dot-green"></span><span class="label">Tier 1: MEMORY.md</span><span class="meta">Always loaded</span></li>
             <li><span class="dot dot-green"></span><span class="label">Tier 2: Daily Logs</span><span class="meta">memory/logs/</span></li>
-            <li><span class="dot dot-yellow"></span><span class="label">Tier 3: Upstash Vector</span><span class="meta">mem0 + embeddings</span></li>
+            <li><span class="dot dot-yellow"></span><span class="label">Tier 3: Pinecone</span><span class="meta">mem0 + embeddings (optional, user-owned)</span></li>
           </ul>
         </div>
 
@@ -708,7 +708,7 @@
     <div class="conn"><span class="node">You</span> <span class="arrow">&#8594;</span> <span class="node">Browser</span> <span class="arrow">&#8594;</span> <span class="node">Dashboard :5050</span></div>
     <div class="conn"><span class="node">You</span> <span class="arrow">&#8594;</span> <span class="node">Telegram</span> <span class="arrow">&#8594;</span> <span class="node">IRIS Core (VPS)</span></div>
     <div class="conn"><span class="node">IRIS Core</span> <span class="arrow">&#8594;</span> <span class="via">upgrade link</span> <span class="arrow">&#8594;</span> <span class="node">IRIS Pro</span></div>
-    <div class="conn"><span class="node">IRIS Pro</span> <span class="arrow">&#8596;</span> <span class="node">Upstash Vector</span> <span class="via">(memory)</span></div>
+    <div class="conn"><span class="node">IRIS Pro</span> <span class="arrow">&#8596;</span> <span class="node">Pinecone</span> <span class="via">(memory, optional)</span></div>
     <div class="conn"><span class="node">IRIS Core</span> <span class="arrow">&#8594;</span> <span class="node">Gmail</span> <span class="arrow">&#8594;</span> <span class="node">User Inbox</span></div>
     <div class="conn"><span class="node">IRIS Pro</span> <span class="arrow">&#8596;</span> <span class="node">Gmail</span> <span class="via">(MCP)</span></div>
     <div class="conn"><span class="node">IRIS Pro</span> <span class="arrow">&#8596;</span> <span class="node">Google Calendar</span> <span class="via">(MCP)</span></div>
@@ -792,8 +792,8 @@
       </div>
       <div class="ext-item">
         <span class="dot dot-yellow"></span>
-        <span class="ext-name">Upstash Vector</span>
-        <span class="ext-use">Long-term memory</span>
+        <span class="ext-name">Pinecone</span>
+        <span class="ext-use">Long-term memory (optional)</span>
       </div>
       <div class="ext-item">
         <span class="dot dot-yellow"></span>
