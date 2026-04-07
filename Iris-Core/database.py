@@ -2,11 +2,11 @@ from __future__ import annotations
 
 """
 IRIS Core -- SQLite database operations.
-Handles user registration, commitment tracking, and rate limiting.
+Handles user registration, Mt. Everest session tracking, and rate limiting.
 """
 
 import sqlite3
-from datetime import datetime, date, timedelta
+from datetime import date
 from pathlib import Path
 from config import DB_PATH
 
@@ -31,31 +31,30 @@ def init_db():
             timezone TEXT DEFAULT 'America/Phoenix'
         );
 
-        CREATE TABLE IF NOT EXISTS commitments (
+        CREATE TABLE IF NOT EXISTS mt_everest_sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            telegram_id INTEGER NOT NULL,
-            task TEXT NOT NULL,
-            check_in_time TIMESTAMP NOT NULL,
-            status TEXT DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            checked_in_at TIMESTAMP,
-            FOREIGN KEY (telegram_id) REFERENCES users(telegram_id)
-        );
-
-        CREATE TABLE IF NOT EXISTS sessions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            telegram_id INTEGER NOT NULL,
+            telegram_id INTEGER NOT NULL UNIQUE,
+            status TEXT DEFAULT 'excavating',
+            summary TEXT,
+            email_sent INTEGER DEFAULT 0,
             exchange_count INTEGER DEFAULT 0,
-            session_type TEXT DEFAULT 'accountability',
             started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            closed_at TIMESTAMP,
+            completed_at TIMESTAMP,
+            followup_1d_sent INTEGER DEFAULT 0,
+            followup_3d_sent INTEGER DEFAULT 0,
+            followup_5d_sent INTEGER DEFAULT 0,
+            followup_7d_email_sent INTEGER DEFAULT 0,
             FOREIGN KEY (telegram_id) REFERENCES users(telegram_id)
         );
 
-        CREATE INDEX IF NOT EXISTS idx_commitments_status
-            ON commitments(status, check_in_time);
-        CREATE INDEX IF NOT EXISTS idx_sessions_user
-            ON sessions(telegram_id, closed_at);
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            telegram_id INTEGER NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (telegram_id) REFERENCES users(telegram_id)
+        );
     """)
     conn.commit()
     conn.close()
@@ -96,6 +95,15 @@ def get_user(telegram_id: int) -> dict | None:
     return dict(row) if row else None
 
 
+def get_user_email(telegram_id: int) -> str | None:
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT email FROM users WHERE telegram_id = ?", (telegram_id,)
+    ).fetchone()
+    conn.close()
+    return row["email"] if row else None
+
+
 # ---- Rate limiting ----
 
 def check_rate_limit(telegram_id: int, daily_limit: int) -> bool:
@@ -133,86 +141,25 @@ def increment_message_count(telegram_id: int):
     conn.close()
 
 
-# ---- Commitment operations ----
+# ---- Mt. Everest session operations ----
 
-def add_commitment(telegram_id: int, task: str, check_in_time: datetime) -> int:
+def get_session(telegram_id: int) -> dict | None:
+    """Get the user's Mt. Everest session."""
     conn = get_connection()
-    cursor = conn.execute(
-        "INSERT INTO commitments (telegram_id, task, check_in_time) VALUES (?, ?, ?)",
-        (telegram_id, task, check_in_time.isoformat())
-    )
-    conn.commit()
-    commit_id = cursor.lastrowid
-    conn.close()
-    return commit_id
-
-
-def get_due_checkins() -> list[dict]:
-    """Get all pending commitments where check_in_time has passed."""
-    conn = get_connection()
-    now = datetime.now().isoformat()
-    rows = conn.execute("""
-        SELECT c.*, u.telegram_id
-        FROM commitments c
-        JOIN users u ON c.telegram_id = u.telegram_id
-        WHERE c.status = 'pending' AND c.check_in_time <= ?
-    """, (now,)).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
-
-
-def update_commitment_status(commit_id: int, status: str):
-    conn = get_connection()
-    conn.execute(
-        "UPDATE commitments SET status = ?, checked_in_at = ? WHERE id = ?",
-        (status, datetime.now().isoformat(), commit_id)
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_active_commitments(telegram_id: int) -> list[dict]:
-    conn = get_connection()
-    rows = conn.execute("""
-        SELECT * FROM commitments
-        WHERE telegram_id = ? AND status = 'pending'
-        ORDER BY check_in_time ASC
-    """, (telegram_id,)).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
-
-
-def mark_stale_commitments(hours: int = 24):
-    """Mark commitments as missed if check_in_time was more than `hours` ago."""
-    conn = get_connection()
-    cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
-    conn.execute("""
-        UPDATE commitments
-        SET status = 'missed'
-        WHERE status = 'pending' AND check_in_time <= ?
-    """, (cutoff,))
-    conn.commit()
-    conn.close()
-
-
-# ---- Session tracking ----
-
-def get_active_session(telegram_id: int) -> dict | None:
-    conn = get_connection()
-    row = conn.execute("""
-        SELECT * FROM sessions
-        WHERE telegram_id = ? AND closed_at IS NULL
-        ORDER BY started_at DESC LIMIT 1
-    """, (telegram_id,)).fetchone()
+    row = conn.execute(
+        "SELECT * FROM mt_everest_sessions WHERE telegram_id = ?",
+        (telegram_id,)
+    ).fetchone()
     conn.close()
     return dict(row) if row else None
 
 
-def create_session(telegram_id: int, session_type: str = "accountability") -> int:
+def create_session(telegram_id: int) -> int:
+    """Create a new Mt. Everest session. Returns session ID."""
     conn = get_connection()
     cursor = conn.execute(
-        "INSERT INTO sessions (telegram_id, session_type) VALUES (?, ?)",
-        (telegram_id, session_type)
+        "INSERT OR IGNORE INTO mt_everest_sessions (telegram_id) VALUES (?)",
+        (telegram_id,)
     )
     conn.commit()
     session_id = cursor.lastrowid
@@ -220,28 +167,102 @@ def create_session(telegram_id: int, session_type: str = "accountability") -> in
     return session_id
 
 
-def increment_exchange(session_id: int) -> int:
+def increment_exchange(telegram_id: int) -> int:
+    """Increment exchange count and return new count."""
     conn = get_connection()
     conn.execute(
-        "UPDATE sessions SET exchange_count = exchange_count + 1 WHERE id = ?",
-        (session_id,)
+        "UPDATE mt_everest_sessions SET exchange_count = exchange_count + 1 WHERE telegram_id = ?",
+        (telegram_id,)
     )
     conn.commit()
     row = conn.execute(
-        "SELECT exchange_count FROM sessions WHERE id = ?", (session_id,)
+        "SELECT exchange_count FROM mt_everest_sessions WHERE telegram_id = ?",
+        (telegram_id,)
     ).fetchone()
     conn.close()
     return row["exchange_count"] if row else 0
 
 
-def close_session(session_id: int):
+def get_session_status(telegram_id: int) -> str | None:
+    """Get the current session status: excavating, completed, upgrade_only."""
+    session = get_session(telegram_id)
+    return session["status"] if session else None
+
+
+def save_summary(telegram_id: int, summary_text: str):
+    """Save the Mt. Everest summary and mark session as completed."""
+    from datetime import datetime
+    conn = get_connection()
+    conn.execute("""
+        UPDATE mt_everest_sessions
+        SET summary = ?, status = 'completed', completed_at = ?
+        WHERE telegram_id = ?
+    """, (summary_text, datetime.now().isoformat(), telegram_id))
+    conn.commit()
+    conn.close()
+
+
+def mark_upgrade_only(telegram_id: int):
+    """Transition session to upgrade_only state."""
     conn = get_connection()
     conn.execute(
-        "UPDATE sessions SET closed_at = ? WHERE id = ?",
-        (datetime.now().isoformat(), session_id)
+        "UPDATE mt_everest_sessions SET status = 'upgrade_only' WHERE telegram_id = ?",
+        (telegram_id,)
     )
     conn.commit()
     conn.close()
+
+
+def get_summary(telegram_id: int) -> str | None:
+    """Retrieve the saved Mt. Everest summary."""
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT summary FROM mt_everest_sessions WHERE telegram_id = ?",
+        (telegram_id,)
+    ).fetchone()
+    conn.close()
+    return row["summary"] if row else None
+
+
+def mark_email_sent(telegram_id: int):
+    """Mark that the summary email has been sent."""
+    conn = get_connection()
+    conn.execute(
+        "UPDATE mt_everest_sessions SET email_sent = 1 WHERE telegram_id = ?",
+        (telegram_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+# ---- Conversation persistence ----
+
+def save_message(telegram_id: int, role: str, content: str):
+    """Save a single message to the database."""
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO messages (telegram_id, role, content) VALUES (?, ?, ?)",
+        (telegram_id, role, content),
+    )
+    conn.commit()
+    conn.close()
+
+
+def load_conversation(telegram_id: int, limit: int = 20) -> list[dict]:
+    """Load the most recent messages for a user.
+
+    Returns list of {"role": "user"/"assistant", "content": "..."} dicts,
+    ordered oldest-first (ready for prompt construction).
+    """
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT role, content FROM messages WHERE telegram_id = ? "
+        "ORDER BY id DESC LIMIT ?",
+        (telegram_id, limit),
+    ).fetchall()
+    conn.close()
+    # Reverse so oldest is first
+    return [{"role": row["role"], "content": row["content"]} for row in reversed(rows)]
 
 
 # ---- Email signup (pending registrations) ----
@@ -287,3 +308,83 @@ def claim_signup(signup_token: str, telegram_id: int) -> str | None:
         return email
     conn.close()
     return None
+
+
+# ---- Follow-up scheduling ----
+
+def get_pending_followups(day_offset: int, followup_column: str) -> list[dict]:
+    """Get sessions that need a follow-up at the given day offset.
+
+    Args:
+        day_offset: Days after completion (1, 3, 5, or 7).
+        followup_column: DB column name (e.g. 'followup_1d_sent').
+
+    Returns list of dicts with telegram_id, email, summary, completed_at.
+    """
+    conn = get_connection()
+    rows = conn.execute(f"""
+        SELECT s.telegram_id, u.email, s.summary, s.completed_at
+        FROM mt_everest_sessions s
+        JOIN users u ON s.telegram_id = u.telegram_id
+        WHERE s.status IN ('completed', 'upgrade_only')
+          AND s.completed_at IS NOT NULL
+          AND s.{followup_column} = 0
+          AND datetime(s.completed_at, '+{day_offset} days') <= datetime('now')
+    """).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def mark_followup_sent(telegram_id: int, followup_column: str):
+    """Mark a follow-up as sent for a user."""
+    conn = get_connection()
+    conn.execute(
+        f"UPDATE mt_everest_sessions SET {followup_column} = 1 WHERE telegram_id = ?",
+        (telegram_id,)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_bridge_data(email: str) -> dict | None:
+    """Retrieve Mt. Everest summary for the Core → Pro bridge.
+
+    Returns dict with summary + milestones, or None if not found.
+    """
+    conn = get_connection()
+    row = conn.execute("""
+        SELECT s.summary, s.completed_at, u.email
+        FROM mt_everest_sessions s
+        JOIN users u ON s.telegram_id = u.telegram_id
+        WHERE u.email = ? AND s.status IN ('completed', 'upgrade_only')
+    """, (email.strip().lower(),)).fetchone()
+    conn.close()
+
+    if not row or not row["summary"]:
+        return None
+
+    return {
+        "email": row["email"],
+        "summary": row["summary"],
+        "completed_at": row["completed_at"],
+    }
+
+
+def migrate_followup_columns():
+    """Add follow-up columns to existing databases (safe to run multiple times)."""
+    conn = get_connection()
+    columns = [
+        ("followup_1d_sent", "INTEGER DEFAULT 0"),
+        ("followup_3d_sent", "INTEGER DEFAULT 0"),
+        ("followup_5d_sent", "INTEGER DEFAULT 0"),
+        ("followup_7d_email_sent", "INTEGER DEFAULT 0"),
+    ]
+    for col_name, col_type in columns:
+        try:
+            conn.execute(
+                f"ALTER TABLE mt_everest_sessions ADD COLUMN {col_name} {col_type}"
+            )
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+    conn.commit()
+    conn.close()

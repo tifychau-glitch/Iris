@@ -1,22 +1,22 @@
 # IRIS Core
 
-Free accountability bot on Telegram. Tracks what you say you'll do and whether you actually do it.
+Free Mt. Everest goal-definition session on Telegram. One deep conversation to define your 3-5 year north star.
 
 ## What It Does
 
 - Users sign up via web form (email capture)
-- Message IRIS on Telegram
-- IRIS extracts commitments and deadlines from conversation
-- Sends check-in messages at scheduled times
-- Tracks completion rate
+- Message IRIS on Telegram for a single deep excavation session
+- IRIS helps them define their Mt. Everest -- specific goal, real why, biggest obstacle, identity shifts, milestones
+- Summary emailed to the user at the end
+- Post-session: upgrade path to IRIS Pro for ongoing accountability
 
 ## Architecture
 
 - Python Telegram bot (python-telegram-bot)
 - Anthropic Claude API for conversation
-- SQLite for user data and commitments
-- APScheduler for proactive check-ins
+- SQLite for user data and session tracking
 - Flask for the signup web form
+- Gmail SMTP for summary delivery
 - Single process, single deploy
 
 ## Local Development
@@ -68,10 +68,9 @@ sudo journalctl -u iris-core -f
 
 ## Token Cost Estimate
 
-Using Claude Sonnet with max 300 output tokens per response:
-- ~$0.003-0.005 per conversation session (4 exchanges)
-- ~$0.001 per check-in (1-2 exchanges)
-- At 100 daily active users: ~$15-20/month
+Using Claude Sonnet with uncapped output per response:
+- ~$0.15-0.25 per user (one-time, 8-15 exchange session)
+- At 100 signups: ~$15-25 total (not recurring)
 
 ## Environment Variables
 
@@ -82,4 +81,7 @@ Using Claude Sonnet with max 300 output tokens per response:
 | ANTHROPIC_MODEL | No | claude-sonnet-4-20250514 | Model to use |
 | BOT_USERNAME | No | IrisAccountabilityBot | Bot username (without @) |
 | WEB_PORT | No | 8080 | Signup form port |
-| PRO_URL | No | https://iris-ai.co | Pro upsell link |
+| PRO_UPGRADE_URL | No | https://iris-ai.co | Pro upgrade link |
+| SMTP_USER | No | - | Gmail address for sending summaries |
+| SMTP_PASSWORD | No | - | Gmail app password |
+| FROM_EMAIL | No | SMTP_USER | Sender address |

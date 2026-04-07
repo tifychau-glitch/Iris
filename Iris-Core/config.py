@@ -11,20 +11,12 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent / ".env", override=True)
 
 # API Keys
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
-# Anthropic model
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
-
-# Token optimization limits
-MAX_EXCHANGES_PER_SESSION = 4      # Max back-and-forth per accountability session
-MAX_CHECKIN_EXCHANGES = 2          # Max exchanges after a check-in message
-DAILY_MESSAGE_LIMIT = 50           # Messages per user per day
-
-# Check-in scheduler
-CHECKIN_POLL_INTERVAL_SECONDS = 60  # How often to check for due check-ins
-MISSED_CHECKIN_HOURS = 24           # Hours before marking a check-in as missed
+# Mt. Everest session
+MT_EVEREST_SOFT_LIMIT = 12          # Exchange count where IRIS starts wrapping toward summary
+MAX_CONVERSATION_HISTORY = 20       # Messages kept in memory (full session context)
+DAILY_MESSAGE_LIMIT = 50            # Messages per user per day
 
 # Database
 DB_PATH = Path(__file__).parent / "data" / "iris_core.db"
@@ -36,5 +28,12 @@ WEB_PORT = int(os.getenv("WEB_PORT", "8080"))
 # Telegram bot deeplink base
 BOT_USERNAME = os.getenv("BOT_USERNAME", "IrisAccountabilityBot")
 
-# Pro upsell URL
-PRO_URL = os.getenv("PRO_URL", "https://iris-ai.co")
+# Pro upgrade URL
+PRO_UPGRADE_URL = os.getenv("PRO_UPGRADE_URL", "https://iris-ai.co")
+
+# Email delivery (Gmail SMTP)
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 587
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")  # Gmail app password
+FROM_EMAIL = os.getenv("FROM_EMAIL", "") or SMTP_USER
