@@ -1,12 +1,12 @@
 # Skill: Telegram Bot
 
-Route Telegram messages to Claude Code with persistent memory (mem0 + Pinecone).
+Route Telegram messages to Claude Code with persistent memory (mem0 + Upstash Vector).
 
 ## How It Works
 
 1. **Poll** — Long-polls Telegram Bot API for incoming messages
 2. **Validate** — Whitelist check, rate limiting, blocked content patterns
-3. **Load memory** — Semantic search against Pinecone for memories relevant to the message
+3. **Load memory** — Semantic search against Upstash Vector for memories relevant to the message
 4. **Build context** — Memory + last 20 conversation messages + user's request
 5. **Invoke Claude** — Runs Claude Code CLI with streaming JSON output + progress updates
 6. **Respond** — Sends formatted response back via Telegram
@@ -54,7 +54,8 @@ Required in `.env`:
 - `TELEGRAM_BOT_TOKEN` — from @BotFather on Telegram
 - `ANTHROPIC_API_KEY` — for Claude Code CLI
 - `OPENAI_API_KEY` — for mem0 fact extraction (GPT-4.1 Nano)
-- `PINECONE_API_KEY` — for vector memory storage
+- `UPSTASH_VECTOR_REST_URL` — for vector memory storage (REST URL)
+- `UPSTASH_VECTOR_REST_TOKEN` — for vector memory storage (REST token)
 
 ## Memory Integration
 
@@ -75,4 +76,4 @@ Uses the `memory` skill's scripts directly:
 
 - Message history: `data/messages.db` (SQLite)
 - Logs: `logs/messaging.log`
-- Memory: Pinecone vector store (shared with IDE via `memory` skill)
+- Memory: Upstash Vector store (shared with IDE via `memory` skill)

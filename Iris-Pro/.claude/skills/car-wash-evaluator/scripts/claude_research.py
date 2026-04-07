@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Claude API integration for automated car wash site research
-Uses web_search tool to gather all required data points
+Car wash site research via Claude Code CLI (subscription-based).
+Uses Claude's built-in web search to gather all required data points.
+No API key needed — routes through Claude Code subscription.
 """
 
 import json
 import os
+import subprocess
 from typing import Dict, Any, Optional
-import anthropic
 
 # Will be imported from main evaluator
 class ResearchData:
@@ -38,13 +39,8 @@ def research_site_with_claude(address: str, api_key: Optional[str] = None) -> Re
         ResearchData object with all findings
     """
     
-    if api_key is None:
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-    
-    if not api_key:
-        raise ValueError("Anthropic API key required. Set ANTHROPIC_API_KEY environment variable or pass api_key parameter")
-    
-    client = anthropic.Anthropic(api_key=api_key)
+    # api_key parameter kept for backwards compat but ignored
+    # All reasoning routes through Claude Code CLI (subscription)
     
     # Research prompt for Claude
     research_prompt = f"""I need comprehensive research on a potential car wash location for site evaluation. Please research this address thoroughly:
@@ -147,36 +143,34 @@ Only return the JSON, no additional text."""
     print(f"[→] This may take 30-90 seconds...\n")
     
     try:
-        # Call Claude API with web search tool enabled
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=4000,
-            tools=[{
-                "type": "web_search_20250305",
-                "name": "web_search"
-            }],
-            messages=[{
-                "role": "user",
-                "content": research_prompt
-            }]
+        # Route through Claude Code CLI (subscription-based, no API key needed)
+        # Claude CLI has built-in web search capability
+        full_prompt = (
+            "Use web search to research the following thoroughly. "
+            "Search for each data point individually.\n\n"
+            + research_prompt
         )
-        
-        # Extract the response
-        # Claude may return multiple content blocks (text + tool use results)
-        full_text = ""
-        for block in response.content:
-            if hasattr(block, 'text'):
-                full_text += block.text
-        
-        print(f"[✓] Claude API response received\n")
-        
+
+        result = subprocess.run(
+            ["claude", "-p", full_prompt, "--output-format", "json"],
+            capture_output=True, text=True, timeout=180,  # longer timeout for web search
+        )
+
+        if result.returncode != 0:
+            raise RuntimeError(f"Claude CLI error: {result.stderr[:500]}")
+
+        cli_data = json.loads(result.stdout)
+        full_text = cli_data.get("result", "").strip()
+
+        print(f"[✓] Claude CLI response received\n")
+
         # Parse the JSON response
         research_data = _parse_claude_response(full_text)
-        
+
         return research_data
-        
-    except anthropic.APIError as e:
-        print(f"[✗] Claude API error: {e}")
+
+    except subprocess.TimeoutExpired:
+        print(f"[✗] Claude CLI timed out (180s)")
         raise
     except Exception as e:
         print(f"[✗] Unexpected error: {e}")

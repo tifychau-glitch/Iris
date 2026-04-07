@@ -18,15 +18,16 @@ embedder:
     model: "text-embedding-3-small"
     embedding_dims: 1536
 
-# Vector store — Pinecone (cloud, free tier, portable)
+# Vector store — Upstash Vector (serverless, free tier, no index pausing)
+# Requires: UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN in .env
+# Setup: Create a Dense index at console.upstash.com with dimension=1536, metric=cosine
 vector_store:
-  provider: "pinecone"
+  provider: "upstash_vector"
   config:
-    collection_name: "iris-memory"  # Change this to your own index name if desired
+    collection_name: "iris-memory"
     embedding_model_dims: 1536
-    serverless_config:
-      cloud: "aws"
-      region: "us-east-1"
+    url: "${UPSTASH_VECTOR_REST_URL}"
+    token: "${UPSTASH_VECTOR_REST_TOKEN}"
 
 # History database — local SQLite for audit trail
 # NOTE: This relative path is overridden to an absolute path by mem0_client.py at runtime

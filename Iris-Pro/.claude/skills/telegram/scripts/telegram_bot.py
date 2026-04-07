@@ -10,6 +10,7 @@ Env Vars:
     TELEGRAM_BOT_TOKEN (required)
 """
 
+import os
 import sys
 import json
 import argparse
@@ -57,8 +58,18 @@ def is_user_allowed(user_id: int, username: Optional[str] = None) -> bool:
     config = load_config()
     telegram_config = config.get("telegram", {})
 
-    allowed_ids = telegram_config.get("allowed_user_ids", [])
+    allowed_ids = list(telegram_config.get("allowed_user_ids", []))
     allowed_usernames = telegram_config.get("allowed_usernames", [])
+
+    # Also check .env for TELEGRAM_USER_ID (set via dashboard)
+    env_user_id = os.getenv("TELEGRAM_USER_ID", "")
+    if env_user_id:
+        try:
+            env_id_int = int(env_user_id)
+            if env_id_int not in allowed_ids:
+                allowed_ids.append(env_id_int)
+        except ValueError:
+            pass
 
     # Secure by default — reject if no whitelist
     if not allowed_ids and not allowed_usernames:

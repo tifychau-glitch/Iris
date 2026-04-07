@@ -13,8 +13,9 @@ Output:
     - Prints a JSON summary of geocode result, competitors, and distances
     - Saves a Street View image to /tmp/street_view_<address>.jpg
 
-API key is read from:
-    /sessions/magical-upbeat-wozniak/mnt/outputs/car-wash-config.txt
+API key is read from (first match wins):
+    ~/car-wash-config.txt
+    ../../car-wash-config.txt (relative to this script)
     Format: GOOGLE_MAPS_API_KEY=your_key_here
 
 APIs used (all covered under $200/month free credit):
@@ -37,9 +38,9 @@ import urllib.parse
 # ── Config ────────────────────────────────────────────────────────────────────
 
 CONFIG_PATHS = [
-    "/sessions/magical-upbeat-wozniak/mnt/outputs/car-wash-config.txt",
     os.path.expanduser("~/car-wash-config.txt"),
     os.path.join(os.path.dirname(__file__), "../../car-wash-config.txt"),
+    os.path.join(os.path.dirname(__file__), "../../../../car-wash-config.txt"),
 ]
 
 COMPETITOR_RADIUS_METERS = 8047  # 5 miles
@@ -201,7 +202,8 @@ def run(address):
     competitors = add_driving_distances(lat, lng, competitors, key)
 
     safe_addr = address.replace(" ", "_").replace(",", "")[:40]
-    street_view_path = f"/tmp/street_view_{safe_addr}.jpg"
+    import tempfile
+    street_view_path = os.path.join(tempfile.gettempdir(), f"street_view_{safe_addr}.jpg")
     print(f"  Fetching Street View image", file=sys.stderr)
     street_view_saved = fetch_street_view(lat, lng, key, street_view_path)
 

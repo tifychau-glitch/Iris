@@ -4,7 +4,7 @@ Telegram → Claude Code Handler — Core daemon with mem0 memory integration.
 Routes Telegram messages to Claude Code for execution:
 1. Polls Telegram for incoming messages
 2. Validates sender (whitelist, rate limits, blocked patterns)
-3. Loads relevant memories from Pinecone via mem0
+3. Loads relevant memories from Upstash Vector via mem0
 4. Invokes Claude Code with message + memory context
 5. Sends response back via Telegram
 6. Captures conversation into mem0 for future recall
@@ -66,6 +66,7 @@ MAX_RESPONSE_LENGTH = 4000  # Telegram message limit
 CLAUDE_TIMEOUT = 600  # 10 minutes
 PROGRESS_UPDATE_INTERVAL = 45  # Send progress update every N seconds
 CONVERSATION_HISTORY_LIMIT = 20
+ACCOUNTABILITY_ENGINE = PROJECT_ROOT / ".claude" / "skills" / "iris-accountability-engine" / "scripts" / "accountability_engine.py"
 
 
 # ---------------------------------------------------------------------------
@@ -156,12 +157,49 @@ silence_tracker = SilenceTracker()
 
 
 # ---------------------------------------------------------------------------
-# Memory integration (mem0 + Pinecone)
+# Greeting / repetition detection
+# ---------------------------------------------------------------------------
+
+_GREETING_PATTERNS = {"hi", "hey", "hello", "sup", "yo", "hola", "hii", "hiii", "heya"}
+_recent_messages: Dict[int, list] = {}  # chat_id → list of recent message texts
+
+
+def _is_greeting(text: str) -> bool:
+    return text.strip().lower().rstrip("!.?") in _GREETING_PATTERNS
+
+
+def _check_repetition(chat_id: int, text: str) -> Optional[str]:
+    """Detect repeated identical messages. Returns a redirect response or None."""
+    normalized = text.strip().lower()
+    history = _recent_messages.setdefault(chat_id, [])
+    history.append(normalized)
+    # Keep last 5
+    if len(history) > 5:
+        history.pop(0)
+
+    # Count consecutive identical messages
+    consecutive = 0
+    for msg in reversed(history):
+        if msg == normalized:
+            consecutive += 1
+        else:
+            break
+
+    if consecutive >= 3 and _is_greeting(text):
+        return "I'm here. Try telling me what you need — a task, a question, a goal. That's where I'm useful."
+    elif consecutive >= 3:
+        return f"You've sent that {consecutive} times. What are you trying to do?"
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Memory integration (mem0 + Upstash Vector)
 # ---------------------------------------------------------------------------
 
 def get_memory_context(user_message: str) -> str:
     """
-    Search mem0/Pinecone for memories relevant to the user's message.
+    Search mem0/Upstash Vector for memories relevant to the user's message.
     This is the auto-load feature: every Telegram message triggers a semantic search.
     """
     try:
@@ -194,11 +232,83 @@ def get_memory_context(user_message: str) -> str:
         return ""
 
 
+def get_accountability_context() -> str:
+    """
+    Fetch the current accountability level from the engine.
+    Shapes IRIS's personality based on user's follow-through behavior.
+    """
+    if not ACCOUNTABILITY_ENGINE.exists():
+        return ""
+    try:
+        result = subprocess.run(
+            [sys.executable, str(ACCOUNTABILITY_ENGINE), "get_level"],
+            capture_output=True, text=True, timeout=10,
+            cwd=str(PROJECT_ROOT),
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            level = data.get("accountability_level", 1)
+            name = data.get("level_name", "Sweet Iris")
+            tone = data.get("tone", "warm, supportive")
+            examples = data.get("example_responses", [])[:2]
+            avg_rate = data.get("avg_completion_rate")
+
+            lines = [
+                "<accountability_context>",
+                f"Current accountability level: {level}/5 — {name}",
+                f"Tone: {tone}",
+            ]
+            if avg_rate is not None:
+                lines.append(f"User's 7-day completion rate: {int(avg_rate * 100)}%")
+            if examples:
+                lines.append(f"Example tone: {examples[0]}")
+            lines.append("Adjust your personality to match this level.")
+            lines.append("</accountability_context>")
+            return "\n".join(lines) + "\n\n"
+    except Exception as e:
+        print(f"Warning: Accountability level check failed: {e}")
+    return ""
+
+
+def _log_interaction(source: str = "telegram"):
+    """Record a user interaction for ghost detection."""
+    if not ACCOUNTABILITY_ENGINE.exists():
+        return
+    try:
+        subprocess.run(
+            [sys.executable, str(ACCOUNTABILITY_ENGINE), "log_interaction", "--source", source],
+            capture_output=True, timeout=10,
+            cwd=str(PROJECT_ROOT),
+        )
+    except Exception:
+        pass
+
+
+def _looks_like_garbage(text: str) -> bool:
+    """Check if input is likely a typo, test, or nonsense rather than real data."""
+    stripped = text.strip()
+    # Very short non-greeting, non-command text
+    if len(stripped) <= 3 and not stripped.startswith("/"):
+        return True
+    # All same character repeated
+    if len(set(stripped.lower())) <= 2 and len(stripped) > 2:
+        return True
+    # Random keyboard mash: no vowels in a 4+ char string
+    if len(stripped) >= 4 and not any(c in stripped.lower() for c in "aeiou "):
+        return True
+    return False
+
+
 def capture_to_memory(user_msg: str, assistant_msg: str):
     """
     Feed Telegram conversation into mem0 for fact extraction.
-    Closes the loop: Telegram → Pinecone → future Telegram context.
+    Closes the loop: Telegram → Upstash Vector → future Telegram context.
+    Skips capture for garbage/test inputs to prevent memory pollution.
     """
+    if _looks_like_garbage(user_msg):
+        print(f"  Memory: Skipping capture for likely garbage input: {user_msg[:30]}")
+        return
+
     try:
         sys.path.insert(0, str(MEMORY_SCRIPTS))
         from mem0_add import add_memory
@@ -260,19 +370,33 @@ def _clean_env():
     return env
 
 def find_claude_cli() -> Optional[str]:
-    try:
-        result = subprocess.run(["which", "claude"], capture_output=True, text=True, timeout=5)
-        if result.returncode == 0:
-            return result.stdout.strip()
-    except Exception:
-        pass
+    import shutil
+    import glob as globmod
 
-    try:
-        result = subprocess.run(["which", "npx"], capture_output=True, text=True, timeout=5)
-        if result.returncode == 0:
-            return "npx @anthropic-ai/claude-code"
-    except Exception:
-        pass
+    # 1. Check PATH first
+    path = shutil.which("claude")
+    if path:
+        return path
+
+    # 2. Check Claude Desktop app installation (macOS)
+    desktop_pattern = os.path.expanduser(
+        "~/Library/Application Support/Claude/claude-code/*/claude.app/Contents/MacOS/claude"
+    )
+    desktop_matches = sorted(globmod.glob(desktop_pattern), reverse=True)
+    if desktop_matches:
+        return desktop_matches[0]  # Latest version
+
+    # 3. Check claude-code-vm variant
+    vm_pattern = os.path.expanduser(
+        "~/Library/Application Support/Claude/claude-code-vm/*/claude"
+    )
+    vm_matches = sorted(globmod.glob(vm_pattern), reverse=True)
+    if vm_matches:
+        return vm_matches[0]
+
+    # 4. Fallback to npx
+    if shutil.which("npx"):
+        return "npx @anthropic-ai/claude-code"
 
     return None
 
@@ -508,8 +632,16 @@ def handle_message(message: Dict[str, Any], dry_run: bool = False) -> Dict[str, 
         result["success"] = True
         return result
 
-    # Acknowledge receipt
-    send_message(chat_id, "Got it! Working on your request...")
+    # Check for repeated messages / greeting loops
+    repetition_response = _check_repetition(chat_id, text)
+    if repetition_response:
+        send_message(chat_id, repetition_response)
+        result["response"] = repetition_response
+        result["success"] = True
+        result["shortcircuit"] = "repetition_detected"
+        return result
+
+    # Show typing indicator (no canned acknowledgment — IRIS responds directly)
     send_typing_action(chat_id)
 
     # Log incoming request
@@ -524,11 +656,17 @@ def handle_message(message: Dict[str, Any], dry_run: bool = False) -> Dict[str, 
 
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Processing @{username}: {text[:50]}...")
 
-    # Build prompt with memory + conversation context
+    # Log interaction for ghost detection
+    _log_interaction("telegram")
+
+    # Build prompt with memory + conversation + accountability context
     memory_context = get_memory_context(text)
     conversation_context = get_conversation_context(str(chat_id))
+    accountability_context = get_accountability_context()
 
     context_parts = []
+    if accountability_context:
+        context_parts.append(accountability_context)
     if memory_context:
         context_parts.append(memory_context)
     if conversation_context:
@@ -536,6 +674,8 @@ def handle_message(message: Dict[str, Any], dry_run: bool = False) -> Dict[str, 
 
     full_prompt = "".join(context_parts) + text if context_parts else text
 
+    if accountability_context:
+        print(f"  Accountability context loaded")
     if memory_context:
         print(f"  Memory context loaded ({memory_context.count(chr(10))} lines)")
 
@@ -598,7 +738,7 @@ def process_updates(once: bool = False, dry_run: bool = False) -> Dict[str, Any]
     print(f"Starting Telegram handler")
     print(f"  Project root: {PROJECT_ROOT}")
     print(f"  Polling interval: {interval}s")
-    print(f"  Memory: mem0 + Pinecone (auto-load + auto-capture)")
+    print(f"  Memory: mem0 + Upstash Vector (auto-load + auto-capture)")
     print(f"  Silence handling: {'enabled' if silence_enabled else 'disabled'}")
     print(f"  Dry run: {dry_run}")
     print("Press Ctrl+C to stop\n")

@@ -167,7 +167,7 @@ def feed_to_mem0(messages):
 
     m = get_memory_client()
     cleaned = prepare_messages(messages)
-    # Scrub secrets before sending anything to OpenAI/Pinecone
+    # Scrub secrets before sending anything to OpenAI/Upstash
     for msg in cleaned:
         msg["content"] = sanitize_text(msg["content"])
     batches = batch_messages(cleaned)

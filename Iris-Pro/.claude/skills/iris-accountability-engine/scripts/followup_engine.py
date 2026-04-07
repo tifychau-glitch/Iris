@@ -23,8 +23,6 @@ PROJECT_ROOT = SCRIPT_DIR.parent.parent.parent.parent
 load_dotenv(PROJECT_ROOT / ".env")
 
 DB_PATH = PROJECT_ROOT / "data" / "iris_accountability.db"
-SEND_SCRIPT = SCRIPT_DIR.parent / "../../telegram/scripts/telegram_send.py"
-# Normalize the path
 SEND_SCRIPT = (SCRIPT_DIR / "../../../telegram/scripts/telegram_send.py").resolve()
 
 

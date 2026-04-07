@@ -1,11 +1,11 @@
 ---
 name: memory
-description: Manage persistent memory (mem0 + Pinecone) — search, add, sync, list, delete
+description: Manage persistent memory (mem0 + Upstash Vector) — search, add, sync, list, delete
 ---
 
 # Memory Skill
 
-Manages the 3-tier persistent memory system: mem0 + Pinecone vectors, session logs, and MEMORY.md.
+Manages the 3-tier persistent memory system: mem0 + Upstash Vector, session logs, and MEMORY.md.
 
 ## Python Path
 
@@ -33,7 +33,7 @@ Repopulates the FTS5 keyword index from the history DB. Run once after installat
 
 ### Add a specific fact
 ```bash
-python3 .claude/skills/memory/scripts/mem0_add.py --content "User prefers Pinecone over Supabase for vectors"
+python3 .claude/skills/memory/scripts/mem0_add.py --content "User prefers Upstash Vector for vectors"
 ```
 
 ### Add from conversation messages
@@ -68,7 +68,7 @@ python3 .claude/skills/memory/scripts/mem0_delete.py --all --confirm
 **Three tiers:**
 1. **Core Memory** — `memory/MEMORY.md`, always in system prompt, synced from mem0
 2. **Session Memory** — Daily logs in `memory/logs/`, human-readable session continuity
-3. **Long-Term Memory** — mem0 + Pinecone vectors, automatic extraction + semantic search
+3. **Long-Term Memory** — mem0 + Upstash Vector, automatic extraction + semantic search
 
 **Auto-capture:** Runs via Claude Code Stop hook (`auto_capture.py`). After every response cycle, reads new transcript messages, feeds to mem0 for fact extraction + dedup. No manual intervention needed. Logs at `data/auto_capture.log`.
 
@@ -77,7 +77,7 @@ python3 .claude/skills/memory/scripts/mem0_delete.py --all --confirm
 - mem0 config: `.claude/skills/memory/references/mem0_config.yaml`
 - LLM: GPT-4.1 Nano (extraction + classification)
 - Embeddings: text-embedding-3-small
-- Vector store: Pinecone (cloud, free tier, serverless)
+- Vector store: Upstash Vector (serverless, free tier)
 - History DB: `data/mem0_history.db` (SQLite, auto-managed)
 - Capture markers: `data/capture_markers/` (tracks transcript position per session)
 
@@ -93,13 +93,13 @@ python3 .claude/skills/memory/scripts/mem0_delete.py --all --confirm
 
 **What to be aware of:**
 - Conversation snippets are sent to OpenAI API for fact extraction (their API policy: not used for training)
-- Extracted facts + vectors are stored in Pinecone cloud
+- Extracted facts + vectors are stored in Upstash Vector cloud
 - Local files (SQLite, MEMORY.md, logs) are plaintext on disk
 - If working under NDA, be mindful that the system processes all conversation content
 - For maximum security: swap to local Qdrant + local LLM (mem0 config supports this as a one-line change per component)
 
 ## Known Issues
 
-1. **mem0 v1.0.4 + Pinecone**: `get_all()` and `delete_all()` have bugs. The list and delete scripts fall back to the history DB. Will be fixed in future mem0 releases.
+1. **mem0 v1.0.4 + Upstash Vector**: `get_all()` and `delete_all()` have bugs. The list and delete scripts fall back to the history DB. Will be fixed in future mem0 releases.
 2. **Complex markdown content**: GPT-4.1 Nano sometimes fails to return valid JSON when processing messages with heavy markdown. The `prepare_messages()` function strips most of this, but some batches may still fail. Those messages aren't lost — they're in the transcript.
 3. **First run with large backlog**: If auto_capture runs for the first time on a long conversation, it processes everything. Some batches may fail on complex content. Normal incremental runs (2-4 messages) work reliably.

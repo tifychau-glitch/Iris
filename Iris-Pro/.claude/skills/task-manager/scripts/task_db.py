@@ -20,6 +20,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent.parent.parent.parent.parent / "data" / "tasks.db"
+ACCOUNTABILITY_DB = DB_PATH.parent / "iris_accountability.db"
 
 
 def get_connection():
@@ -45,8 +46,26 @@ def get_connection():
     return conn
 
 
+def _create_commitment_for_task(title, due_date, category="general"):
+    """Auto-create a commitment in the accountability DB when a task has a due date."""
+    if not due_date or not ACCOUNTABILITY_DB.exists():
+        return
+    try:
+        conn = sqlite3.connect(str(ACCOUNTABILITY_DB))
+        now = datetime.now().isoformat()
+        conn.execute(
+            "INSERT INTO commitments (description, category, due_date, source, created_at) "
+            "VALUES (?, ?, ?, 'task_sync', ?)",
+            (title, category, due_date, now)
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+
 def add_task(args):
-    """Add a new task."""
+    """Add a new task and create matching accountability commitment."""
     conn = get_connection()
     conn.execute(
         """INSERT INTO tasks (title, description, priority, due_date, project, tags)
@@ -57,6 +76,8 @@ def add_task(args):
     conn.commit()
     task_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     conn.close()
+
+    _create_commitment_for_task(args.title, args.due, args.project or "general")
     print(json.dumps({"status": "added", "id": task_id, "title": args.title}))
 
 
@@ -107,20 +128,41 @@ def list_tasks(args):
     print(json.dumps({"tasks": tasks, "count": len(tasks)}, indent=2))
 
 
+def _sync_completion_to_accountability(task_title):
+    """Mark matching commitment as completed in accountability DB."""
+    if not ACCOUNTABILITY_DB.exists():
+        return
+    try:
+        conn = sqlite3.connect(str(ACCOUNTABILITY_DB))
+        today = datetime.now().strftime("%Y-%m-%d")
+        now = datetime.now().isoformat()
+        conn.execute(
+            "UPDATE commitments SET completed = 1, completed_at = ? "
+            "WHERE description = ? AND due_date = ? AND completed = 0",
+            (now, task_title, today)
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+
 def complete_task(args):
-    """Mark a task as completed."""
+    """Mark a task as completed and sync to accountability engine."""
     conn = get_connection()
     now = datetime.now().isoformat()
+
+    task = conn.execute("SELECT title FROM tasks WHERE id = ?", (args.id,)).fetchone()
+    title = task["title"] if task else "(unknown)"
+
     conn.execute(
         "UPDATE tasks SET status = 'completed', completed_at = ? WHERE id = ?",
         (now, args.id)
     )
     conn.commit()
-
-    task = conn.execute("SELECT title FROM tasks WHERE id = ?", (args.id,)).fetchone()
     conn.close()
 
-    title = task["title"] if task else "(unknown)"
+    _sync_completion_to_accountability(title)
     print(json.dumps({"status": "completed", "id": args.id, "title": title}))
 
 

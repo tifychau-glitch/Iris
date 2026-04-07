@@ -81,23 +81,32 @@ def sanitize_text(text):
 
 
 def get_memory_client():
-    """Return singleton mem0 Memory instance configured from mem0_config.yaml."""
+    """Return singleton mem0 Memory instance configured from mem0_config.yaml.
+
+    Returns None if initialization fails (missing credentials, network issues).
+    Callers should handle None gracefully.
+    """
     global _client
     if _client is not None:
         return _client
 
-    from mem0 import Memory
+    try:
+        from mem0 import Memory
 
-    with open(CONFIG_PATH) as f:
-        config = yaml.safe_load(f)
+        with open(CONFIG_PATH) as f:
+            config = yaml.safe_load(f)
 
-    config = _resolve_env_vars(config)
+        config = _resolve_env_vars(config)
 
-    # Override history_db_path with absolute path so it works regardless of cwd
-    config["history_db_path"] = str(HISTORY_DB_PATH)
+        # Override history_db_path with absolute path so it works regardless of cwd
+        config["history_db_path"] = str(HISTORY_DB_PATH)
 
-    _client = Memory.from_config(config_dict=config)
-    return _client
+        _client = Memory.from_config(config_dict=config)
+        return _client
+    except Exception as e:
+        print(f"Warning: Memory client initialization failed: {e}")
+        print("Memory features will be unavailable this session.")
+        return None
 
 
 def _resolve_env_vars(obj):

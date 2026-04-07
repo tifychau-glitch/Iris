@@ -156,7 +156,8 @@ Examples:
         script_path = os.path.join(skill_dir, 'scripts', f'{name.replace("-", "_")}.py')
         with open(script_path, 'w') as f:
             f.write(script_content.lstrip('\n'))
-        os.chmod(script_path, 0o755)
+        if sys.platform != "win32":
+            os.chmod(script_path, 0o755)
 
     # Summary
     print(json.dumps({

@@ -23,7 +23,7 @@ The first time you use this skill in a new session, ask the user one configurati
 
 **If the user says yes:**
 1. Ask them to save their key to a file called `car-wash-config.txt` in their outputs folder (the same folder where reports are saved), in this format: `GOOGLE_MAPS_API_KEY=their_key_here`
-2. Read the key from that file using the Read tool: look for it at `/sessions/magical-upbeat-wozniak/mnt/outputs/car-wash-config.txt`. Parse the value after the `=` sign.
+2. Read the key from that file using the Read tool: look for it at `~/car-wash-config.txt` or `car-wash-config.txt` in the project root. Parse the value after the `=` sign.
 3. Store the key value as `GOOGLE_MAPS_API_KEY` for this session
 4. Confirm: "Got it — key loaded. I'll use Google APIs for competitor research and Street View on this evaluation."
 5. Enable enhanced research mode (see Step 1 below)
@@ -103,7 +103,7 @@ The evaluation has three layers:
 
 ### Step 3: Produce the report
 
-Output a formatted `.docx` report using the DOCX skill. Read `references/output-template.md` for the exact structure and section order. The report must include:
+Output a formatted `.docx` report using the DOCX skill. The report must include the following sections in order:
 
 - Site address and date
 - Final decision (one of 5 tiers)
@@ -119,7 +119,7 @@ Output a formatted `.docx` report using the DOCX skill. Read `references/output-
 - Street View photo of the site's road frontage (in the Site Overview section)
 - Competitor table with columns: Name | Distance (mi) | Drive Time | Rating | Review Count
 
-Save the report to `/sessions/magical-upbeat-wozniak/mnt/outputs/` using the filename format:
+Save the report to the project root or user's preferred output directory using the filename format:
 `CityName_SiteName_CarWashEval_YYYY-MM-DD.docx`
 
 ---

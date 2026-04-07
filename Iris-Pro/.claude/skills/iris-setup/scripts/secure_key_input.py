@@ -21,20 +21,46 @@ ENV_FILE = os.path.join(PROJECT_ROOT, ".env")
 ENV_EXAMPLE = os.path.join(PROJECT_ROOT, ".env.example")
 
 REQUIRED_KEYS = {
-    "ANTHROPIC_API_KEY": {
-        "label": "Anthropic API Key",
-        "validate": lambda v: v.startswith("sk-ant-"),
-        "hint": "Should start with sk-ant-",
-    },
-    "PINECONE_API_KEY": {
-        "label": "Pinecone API Key",
-        "validate": lambda v: len(v) > 10,
-        "hint": "Should be a long alphanumeric string",
-    },
     "TELEGRAM_BOT_TOKEN": {
         "label": "Telegram Bot Token",
         "validate": lambda v: ":" in v,
         "hint": "Should look like 123456789:ABCdefGHI...",
+    },
+    "TELEGRAM_USER_ID": {
+        "label": "Telegram User ID",
+        "validate": lambda v: v.isdigit(),
+        "hint": "Numeric ID from @userinfobot on Telegram",
+    },
+}
+
+OPTIONAL_KEYS = {
+    "UPSTASH_VECTOR_REST_URL": {
+        "label": "Upstash Vector REST URL",
+        "validate": lambda v: v.startswith("https://") and "upstash" in v,
+        "hint": "Should start with https:// and contain 'upstash' (optional — enables cross-session memory)",
+    },
+    "UPSTASH_VECTOR_REST_TOKEN": {
+        "label": "Upstash Vector REST Token",
+        "validate": lambda v: len(v) > 10,
+        "hint": "Should be a long alphanumeric string (optional — enables cross-session memory)",
+    },
+}
+
+# Only required when AI_PROVIDER is set to 'anthropic'
+PROVIDER_KEYS = {
+    "anthropic": {
+        "ANTHROPIC_API_KEY": {
+            "label": "Anthropic API Key",
+            "validate": lambda v: v.startswith("sk-ant-"),
+            "hint": "Should start with sk-ant-",
+        },
+    },
+    "openai": {
+        "OPENAI_API_KEY": {
+            "label": "OpenAI API Key",
+            "validate": lambda v: v.startswith("sk-"),
+            "hint": "Should start with sk-",
+        },
     },
 }
 
@@ -75,17 +101,28 @@ def read_env_value(key_name):
     return None
 
 
+def _get_key_info(key_name):
+    """Look up key info from required keys, optional keys, and provider keys."""
+    if key_name in REQUIRED_KEYS:
+        return REQUIRED_KEYS[key_name]
+    if key_name in OPTIONAL_KEYS:
+        return OPTIONAL_KEYS[key_name]
+    for provider_keys in PROVIDER_KEYS.values():
+        if key_name in provider_keys:
+            return provider_keys[key_name]
+    return {}
+
+
 def check_key(key_name):
     """Check if a key exists and passes validation."""
     value = read_env_value(key_name)
+    info = _get_key_info(key_name)
 
     if value is None:
-        info = REQUIRED_KEYS.get(key_name, {})
         label = info.get("label", key_name)
         print(f"MISSING: {label} is not set in .env")
         return False
 
-    info = REQUIRED_KEYS.get(key_name, {})
     validator = info.get("validate")
 
     if validator and not validator(value):
@@ -99,14 +136,24 @@ def check_key(key_name):
     return True
 
 
+def get_required_keys():
+    """Return required keys including provider-specific ones."""
+    keys = dict(REQUIRED_KEYS)
+    provider = read_env_value("AI_PROVIDER") or "claude-cli"
+    provider_specific = PROVIDER_KEYS.get(provider, {})
+    keys.update(provider_specific)
+    return keys
+
+
 def check_all():
     """Check all required keys and report status."""
+    all_keys = get_required_keys()
     results = {}
-    for key_name in REQUIRED_KEYS:
+    for key_name in all_keys:
         results[key_name] = check_key(key_name)
 
     configured = sum(1 for v in results.values() if v)
-    total = len(REQUIRED_KEYS)
+    total = len(all_keys)
     print(f"\n{configured}/{total} required keys configured.")
 
     if configured == total:

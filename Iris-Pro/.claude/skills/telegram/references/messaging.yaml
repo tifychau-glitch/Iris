@@ -5,7 +5,7 @@ telegram:
   enabled: true
   # Bot token from .env: TELEGRAM_BOT_TOKEN
   # Get your user ID: message @userinfobot on Telegram
-  allowed_user_ids: []  # Add your Telegram user ID here (e.g., [123456789])
+  allowed_user_ids: []  # Set via dashboard (TELEGRAM_USER_ID in .env) or add IDs here
   allowed_usernames: []  # Or usernames without @ (e.g., ["your_username"])
   polling_interval: 1.0  # seconds between polling checks
 
