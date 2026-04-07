@@ -1,14 +1,30 @@
-"""Project Dashboard - Simple local Flask server."""
+"""Project Dashboard - Simple local Flask server with connector management."""
 
+import hashlib
 import json
 import os
+import secrets
 import sqlite3
+import subprocess
+import sys
+from functools import wraps
+try:
+    import yaml
+except ImportError:
+    yaml = None
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, send_from_directory
+from pathlib import Path
+from flask import Flask, request, jsonify, send_from_directory, redirect, session, make_response
 from db import get_db, init_db
 
 app = Flask(__name__, static_folder=".", static_url_path="")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
+app.permanent_session_lifetime = timedelta(hours=24)
 
+DASHBOARD_DIR = Path(__file__).parent
+PROJECT_ROOT = DASHBOARD_DIR.parent
+ENV_FILE = PROJECT_ROOT / ".env"
+CONNECTORS_YAML = DASHBOARD_DIR / "connectors.yaml"
 ACCOUNTABILITY_DB = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "iris_accountability.db")
 
 
@@ -22,7 +38,186 @@ def get_accountability_db():
 VALID_STATUSES = ["idea", "not_started", "in_progress", "blocked", "done"]
 
 
+# --- Cross-platform file locking ---
+
+from contextlib import contextmanager
+
+@contextmanager
+def _file_lock(lock_path):
+    """Acquire an exclusive file lock (cross-platform)."""
+    f = open(lock_path, "w")
+    try:
+        if sys.platform == "win32":
+            import msvcrt
+            msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(f, fcntl.LOCK_EX)
+        yield f
+    finally:
+        f.close()
+
+
+# --- Auth ---
+
+PBKDF2_ITERATIONS = 260_000
+
+
+def hash_password(password: str, salt: str = None) -> tuple[str, str]:
+    """Hash a password with PBKDF2-SHA256. Returns (hash, salt)."""
+    if not salt:
+        salt = secrets.token_hex(16)
+    hashed = hashlib.pbkdf2_hmac(
+        "sha256", password.encode(), salt.encode(), PBKDF2_ITERATIONS
+    ).hex()
+    return hashed, salt
+
+
+def verify_password(password: str, stored_hash: str, salt: str) -> bool:
+    """Verify a password against stored hash. Supports both PBKDF2 and legacy SHA-256."""
+    # Try PBKDF2 first (new format)
+    pbkdf2_hash, _ = hash_password(password, salt)
+    if pbkdf2_hash == stored_hash:
+        return True
+    # Fallback: legacy SHA-256 for existing installs
+    legacy_hash = hashlib.sha256(f"{salt}:{password}".encode()).hexdigest()
+    return legacy_hash == stored_hash
+
+
+def is_setup_complete() -> bool:
+    """Check if initial account setup has been done."""
+    conn = get_db()
+    row = conn.execute("SELECT COUNT(*) FROM settings WHERE key = 'auth_hash'").fetchone()
+    conn.close()
+    return row[0] > 0
+
+
+def login_required(f):
+    """Decorator to require authentication."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not is_setup_complete():
+            # No password set yet — redirect to setup (not open access)
+            if request.is_json or request.path.startswith("/api/"):
+                return jsonify({"error": "Setup required. Go to /setup"}), 401
+            return redirect("/setup")
+        if not session.get("authenticated"):
+            if request.is_json or request.path.startswith("/api/"):
+                return jsonify({"error": "Authentication required"}), 401
+            return redirect("/login")
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route("/login")
+def login_page():
+    if not is_setup_complete():
+        return redirect("/setup")
+    return send_from_directory(".", "login.html")
+
+
+@app.route("/setup")
+def setup_page():
+    if is_setup_complete():
+        return redirect("/login")
+    return send_from_directory(".", "setup-auth.html")
+
+
+@app.route("/api/auth/setup", methods=["POST"])
+def auth_setup():
+    """First-time password setup."""
+    if is_setup_complete():
+        return jsonify({"error": "Already configured"}), 400
+
+    data = request.json
+    password = data.get("password", "").strip()
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+
+    hashed, salt = hash_password(password)
+    now = datetime.now().isoformat()
+    conn = get_db()
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('auth_hash', ?, ?)",
+        (hashed, now),
+    )
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('auth_salt', ?, ?)",
+        (salt, now),
+    )
+    conn.commit()
+    conn.close()
+
+    session["authenticated"] = True
+    session.permanent = True
+    return jsonify({"success": True})
+
+
+@app.route("/api/auth/login", methods=["POST"])
+def auth_login():
+    """Authenticate with password."""
+    data = request.json
+    password = data.get("password", "").strip()
+
+    conn = get_db()
+    hash_row = conn.execute("SELECT value FROM settings WHERE key = 'auth_hash'").fetchone()
+    salt_row = conn.execute("SELECT value FROM settings WHERE key = 'auth_salt'").fetchone()
+    conn.close()
+
+    if not hash_row or not salt_row:
+        return jsonify({"error": "No account configured"}), 400
+
+    if verify_password(password, hash_row["value"], salt_row["value"]):
+        session["authenticated"] = True
+        session.permanent = True
+        return jsonify({"success": True})
+
+    return jsonify({"error": "Wrong password"}), 401
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+def auth_logout():
+    session.clear()
+    return jsonify({"success": True})
+
+
+@app.route("/api/auth/change-password", methods=["POST"])
+@login_required
+def auth_change_password():
+    data = request.get_json()
+    current = data.get("current_password", "")
+    new_pw = data.get("new_password", "")
+
+    if not current or not new_pw:
+        return jsonify({"success": False, "error": "Both fields required."})
+
+    if len(new_pw) < 6:
+        return jsonify({"success": False, "error": "New password must be at least 6 characters."})
+
+    conn = get_db()
+    row_hash = conn.execute("SELECT value FROM settings WHERE key = 'auth_hash'").fetchone()
+    row_salt = conn.execute("SELECT value FROM settings WHERE key = 'auth_salt'").fetchone()
+
+    if not row_hash or not row_salt:
+        conn.close()
+        return jsonify({"success": False, "error": "No password set."})
+
+    if not verify_password(current, row_hash[0], row_salt[0]):
+        conn.close()
+        return jsonify({"success": False, "error": "Current password is incorrect."})
+
+    new_hash, new_salt = hash_password(new_pw)
+    now = datetime.now().isoformat()
+    conn.execute("UPDATE settings SET value = ?, updated_at = ? WHERE key = 'auth_hash'", (new_hash, now))
+    conn.execute("UPDATE settings SET value = ?, updated_at = ? WHERE key = 'auth_salt'", (new_salt, now))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
+
+
 @app.route("/")
+@login_required
 def index():
     return send_from_directory(".", "index.html")
 
@@ -30,6 +225,7 @@ def index():
 # --- API ---
 
 @app.route("/api/projects", methods=["GET"])
+@login_required
 def list_projects():
     conn = get_db()
     rows = conn.execute("SELECT * FROM projects WHERE status != 'archived' ORDER BY updated_at DESC").fetchall()
@@ -45,6 +241,7 @@ def list_projects():
 
 
 @app.route("/api/projects", methods=["POST"])
+@login_required
 def create_project():
     data = request.json
     name = data.get("name", "").strip()
@@ -73,6 +270,7 @@ def create_project():
 
 
 @app.route("/api/projects/<int:project_id>", methods=["PATCH"])
+@login_required
 def update_project(project_id):
     data = request.json
     conn = get_db()
@@ -116,6 +314,7 @@ def update_project(project_id):
 
 
 @app.route("/api/projects/<int:project_id>", methods=["DELETE"])
+@login_required
 def archive_project(project_id):
     conn = get_db()
     now = datetime.now().isoformat()
@@ -130,6 +329,7 @@ def archive_project(project_id):
 
 
 @app.route("/api/projects/<int:project_id>/activity", methods=["GET"])
+@login_required
 def get_activity(project_id):
     conn = get_db()
     rows = conn.execute(
@@ -141,6 +341,7 @@ def get_activity(project_id):
 
 
 @app.route("/api/projects/<int:project_id>/activity", methods=["POST"])
+@login_required
 def add_activity(project_id):
     data = request.json
     message = data.get("message", "").strip()
@@ -163,6 +364,7 @@ def add_activity(project_id):
 
 
 @app.route("/api/projects/<int:project_id>/tasks", methods=["GET"])
+@login_required
 def list_tasks(project_id):
     conn = get_db()
     rows = conn.execute(
@@ -174,6 +376,7 @@ def list_tasks(project_id):
 
 
 @app.route("/api/projects/<int:project_id>/tasks", methods=["POST"])
+@login_required
 def create_task(project_id):
     data = request.json
     title = data.get("title", "").strip()
@@ -200,6 +403,7 @@ def create_task(project_id):
 
 
 @app.route("/api/tasks/<int:task_id>/toggle", methods=["POST"])
+@login_required
 def toggle_task(task_id):
     conn = get_db()
     task = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
@@ -228,6 +432,7 @@ def toggle_task(task_id):
 
 
 @app.route("/api/tasks/<int:task_id>", methods=["DELETE"])
+@login_required
 def delete_task(task_id):
     conn = get_db()
     task = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
@@ -246,6 +451,7 @@ def delete_task(task_id):
 
 
 @app.route("/api/accountability", methods=["GET"])
+@login_required
 def accountability_metrics():
     conn = get_accountability_db()
     if not conn:
@@ -346,7 +552,352 @@ def accountability_metrics():
     })
 
 
+# --- Connector Registry ---
+
+def load_connector_registry():
+    """Load connector definitions from YAML."""
+    if not CONNECTORS_YAML.exists():
+        return []
+    if yaml:
+        with open(CONNECTORS_YAML) as f:
+            return yaml.safe_load(f).get("connectors", [])
+    # Fallback: parse simple YAML manually if pyyaml not installed
+    # Install pyyaml for full support: pip install pyyaml
+    return []
+
+
+def read_env_value(key):
+    """Read a single value from the .env file."""
+    if not ENV_FILE.exists():
+        return None
+    with open(ENV_FILE) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith(f"{key}="):
+                value = line[len(key) + 1:].strip()
+                if (value.startswith('"') and value.endswith('"')) or \
+                   (value.startswith("'") and value.endswith("'")):
+                    value = value[1:-1]
+                    # Unescape characters escaped by write_env_value
+                    value = value.replace("\\$", "$").replace('\\"', '"').replace("\\\\", "\\")
+                return value if value else None
+    return None
+
+
+def _escape_env_value(value):
+    """Escape special chars inside double-quoted .env values."""
+    value = value.replace("\\", "\\\\")
+    value = value.replace('"', '\\"')
+    value = value.replace("$", "\\$")
+    return value
+
+
+def write_env_value(key, value):
+    """Write or update a key in the .env file (file-locked)."""
+    with _file_lock(str(ENV_FILE) + ".lock"):
+        lines = []
+        found = False
+        if ENV_FILE.exists():
+            with open(ENV_FILE) as f:
+                lines = f.readlines()
+
+        escaped = _escape_env_value(value)
+        new_lines = []
+        for line in lines:
+            if line.strip().startswith(f"{key}="):
+                new_lines.append(f'{key}="{escaped}"\n')
+                found = True
+            else:
+                new_lines.append(line)
+
+        if not found:
+            new_lines.append(f'\n{key}="{escaped}"\n')
+
+        with open(ENV_FILE, "w") as f:
+            f.writelines(new_lines)
+
+
+def remove_env_value(key):
+    """Remove a key from the .env file (comments out the line, file-locked)."""
+    if not ENV_FILE.exists():
+        return
+    with _file_lock(str(ENV_FILE) + ".lock"):
+        with open(ENV_FILE) as f:
+            lines = f.readlines()
+        new_lines = []
+        for line in lines:
+            if line.strip().startswith(f"{key}="):
+                new_lines.append(f"# {line.strip()}\n")
+            else:
+                new_lines.append(line)
+        with open(ENV_FILE, "w") as f:
+            f.writelines(new_lines)
+
+
+_connectors_yaml_mtime = 0.0
+
+
+def sync_connectors_from_registry():
+    """Ensure all connectors from YAML exist in the database."""
+    global _connectors_yaml_mtime
+    if CONNECTORS_YAML.exists():
+        _connectors_yaml_mtime = CONNECTORS_YAML.stat().st_mtime
+
+    registry = load_connector_registry()
+    conn = get_db()
+    now = datetime.now().isoformat()
+
+    for c in registry:
+        existing = conn.execute(
+            "SELECT id FROM connectors WHERE name = ?", (c["name"],)
+        ).fetchone()
+        if not existing:
+            conn.execute(
+                """INSERT INTO connectors (name, display_name, category, status, config_json, created_at, updated_at)
+                   VALUES (?, ?, ?, 'disconnected', '{}', ?, ?)""",
+                (c["name"], c["display_name"], c["category"], now, now),
+            )
+
+    conn.commit()
+    conn.close()
+
+
+def _maybe_resync_connectors():
+    """Re-sync if connectors.yaml has been modified since last check."""
+    global _connectors_yaml_mtime
+    if CONNECTORS_YAML.exists():
+        current_mtime = CONNECTORS_YAML.stat().st_mtime
+        if current_mtime > _connectors_yaml_mtime:
+            sync_connectors_from_registry()
+
+
+@app.route("/settings")
+@login_required
+def settings_page():
+    return send_from_directory(".", "settings.html")
+
+
+@app.route("/api/connectors", methods=["GET"])
+@login_required
+def list_connectors():
+    """List all connectors with their status and registry info."""
+    _maybe_resync_connectors()
+    registry = load_connector_registry()
+    registry_map = {c["name"]: c for c in registry}
+
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM connectors ORDER BY name").fetchall()
+    conn.close()
+
+    result = []
+    for row in rows:
+        r = dict(row)
+        reg = registry_map.get(r["name"], {})
+        r["description"] = reg.get("description", "")
+        r["category"] = reg.get("category", r.get("category", "other"))
+        r["required"] = reg.get("required", False)
+        r["fields"] = reg.get("fields", [])
+
+        # Check which fields have values in .env (don't expose the actual values)
+        fields_status = {}
+        for field in r["fields"]:
+            val = read_env_value(field["key"])
+            fields_status[field["key"]] = bool(val)
+        r["fields_configured"] = fields_status
+
+        # Don't send config_json to frontend (may contain sensitive data)
+        r.pop("config_json", None)
+        result.append(r)
+
+    return jsonify(result)
+
+
+@app.route("/api/connectors/<name>/save", methods=["POST"])
+@login_required
+def save_connector(name):
+    """Save connector credentials to .env file."""
+    data = request.json
+    registry = load_connector_registry()
+    reg = next((c for c in registry if c["name"] == name), None)
+    if not reg:
+        return jsonify({"error": "Unknown connector"}), 404
+
+    # Write each field to .env
+    for field in reg.get("fields", []):
+        key = field["key"]
+        if key in data and data[key]:
+            write_env_value(key, data[key])
+
+    # Update connector status in DB
+    now = datetime.now().isoformat()
+    conn = get_db()
+    conn.execute(
+        "UPDATE connectors SET status = 'connected', updated_at = ? WHERE name = ?",
+        (now, name),
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
+
+
+@app.route("/api/connectors/<name>/test", methods=["POST"])
+@login_required
+def test_connector(name):
+    """Test a connector's credentials."""
+    registry = load_connector_registry()
+    reg = next((c for c in registry if c["name"] == name), None)
+    if not reg:
+        return jsonify({"success": False, "error": "Unknown connector"}), 404
+
+    # Special case: Claude CLI — just check if it's installed
+    if reg.get("test_command"):
+        try:
+            result = subprocess.run(
+                reg["test_command"].split(),
+                capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode == 0:
+                now = datetime.now().isoformat()
+                conn = get_db()
+                conn.execute(
+                    "UPDATE connectors SET status = 'connected', last_verified = ?, updated_at = ? WHERE name = ?",
+                    (now, now, name),
+                )
+                conn.commit()
+                conn.close()
+                return jsonify({"success": True, "message": result.stdout.strip()})
+            return jsonify({"success": False, "error": "CLI not found or not authenticated"})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)})
+
+    # Run test script
+    test_script = reg.get("test_script")
+    if not test_script:
+        return jsonify({"success": False, "error": "No test available"})
+
+    script_path = DASHBOARD_DIR / "scripts" / test_script
+    if not script_path.exists():
+        return jsonify({"success": False, "error": f"Test script not found: {test_script}"})
+
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            capture_output=True, text=True, timeout=15,
+            env={**os.environ, "DOTENV_PATH": str(ENV_FILE)},
+        )
+        output = json.loads(result.stdout) if result.stdout.strip() else {}
+
+        if output.get("success"):
+            now = datetime.now().isoformat()
+            conn = get_db()
+            conn.execute(
+                "UPDATE connectors SET status = 'connected', last_verified = ?, updated_at = ? WHERE name = ?",
+                (now, now, name),
+            )
+            conn.commit()
+            conn.close()
+
+        return jsonify(output)
+    except subprocess.TimeoutExpired:
+        return jsonify({"success": False, "error": "Test timed out"})
+    except (json.JSONDecodeError, Exception) as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/connectors/<name>/disconnect", methods=["POST"])
+@login_required
+def disconnect_connector(name):
+    """Mark a connector as disconnected and remove credentials from .env."""
+    # Remove credential values from .env
+    registry = load_connector_registry()
+    reg = next((c for c in registry if c["name"] == name), None)
+    if reg:
+        for field in reg.get("fields", []):
+            remove_env_value(field["key"])
+
+    now = datetime.now().isoformat()
+    conn = get_db()
+    conn.execute(
+        "UPDATE connectors SET status = 'disconnected', updated_at = ? WHERE name = ?",
+        (now, name),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+
+@app.route("/api/settings", methods=["GET"])
+@login_required
+def get_settings():
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM settings").fetchall()
+    conn.close()
+    return jsonify({r["key"]: r["value"] for r in rows})
+
+
+@app.route("/api/settings/<key>", methods=["PUT"])
+@login_required
+def update_setting(key):
+    data = request.json
+    value = data.get("value", "")
+    now = datetime.now().isoformat()
+    conn = get_db()
+    conn.execute(
+        "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)",
+        (key, value, now),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+
+@app.route("/api/status", methods=["GET"])
+@login_required
+def system_status():
+    """System health overview."""
+    registry = load_connector_registry()
+    conn = get_db()
+
+    connected = conn.execute(
+        "SELECT COUNT(*) FROM connectors WHERE status = 'connected'"
+    ).fetchone()[0]
+    total = conn.execute("SELECT COUNT(*) FROM connectors").fetchone()[0]
+
+    # Count projects
+    active_projects = conn.execute(
+        "SELECT COUNT(*) FROM projects WHERE status IN ('in_progress', 'not_started')"
+    ).fetchone()[0]
+
+    conn.close()
+
+    # Check Claude CLI
+    try:
+        result = subprocess.run(
+            ["claude", "--version"], capture_output=True, text=True, timeout=5
+        )
+        claude_ok = result.returncode == 0
+        claude_version = result.stdout.strip() if claude_ok else None
+    except Exception:
+        claude_ok = False
+        claude_version = None
+
+    return jsonify({
+        "connectors_connected": connected,
+        "connectors_total": total,
+        "active_projects": active_projects,
+        "claude_cli": claude_ok,
+        "claude_version": claude_version,
+    })
+
+
 if __name__ == "__main__":
-    init_db()
+    try:
+        init_db()
+    except Exception as e:
+        print(f"\n  ERROR: Database initialization failed: {e}", file=sys.stderr)
+        print("  Check file permissions for the data/ directory.", file=sys.stderr)
+        sys.exit(1)
+    sync_connectors_from_registry()
     print("\n  Dashboard running at: http://localhost:5050\n")
-    app.run(host="127.0.0.1", port=5050, debug=False)
+    app.run(host="0.0.0.0", port=5050, debug=False)

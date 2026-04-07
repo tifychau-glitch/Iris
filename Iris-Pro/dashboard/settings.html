@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IRIS - Settings</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f0f0f;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 24px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #222;
+  }
+
+  header h1 { font-size: 20px; font-weight: 600; color: #fff; }
+
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: #181818;
+    border-radius: 10px;
+    padding: 3px;
+  }
+
+  .nav-tab {
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #888;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .nav-tab:hover { color: #ccc; }
+  .nav-tab.active { background: #333; color: #fff; }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #888;
+    background: #181818;
+    padding: 6px 12px;
+    border-radius: 20px;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+  }
+
+  .dot-green { background: #4ade80; }
+  .dot-yellow { background: #fbbf24; }
+  .dot-red { background: #f87171; }
+
+  .content { padding: 32px; max-width: 960px; }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    margin-top: 32px;
+  }
+
+  .section-title:first-child { margin-top: 0; }
+
+  .connector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .connector-card {
+    background: #181818;
+    border: 1px solid #252525;
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.15s;
+  }
+
+  .connector-card:hover { border-color: #333; }
+
+  .connector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .connector-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .connector-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .badge-connected { background: #16402b; color: #4ade80; }
+  .badge-disconnected { background: #282828; color: #666; }
+  .badge-error { background: #3f1616; color: #f87171; }
+  .badge-required { background: #3b2510; color: #fb923c; }
+
+  .connector-desc {
+    font-size: 12px;
+    color: #888;
+    line-height: 1.4;
+    margin-bottom: 12px;
+  }
+
+  .connector-fields {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .field-pill {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: #222;
+    color: #666;
+  }
+
+  .field-pill.set { background: #1a2e1a; color: #4ade80; }
+
+  .connector-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .conn-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s;
+  }
+
+  .conn-btn:hover { opacity: 0.85; }
+  .conn-btn-primary { background: #fff; color: #000; }
+  .conn-btn-ghost { background: transparent; color: #888; border: 1px solid #333; }
+  .conn-btn-test { background: #222; color: #aaa; }
+  .conn-btn-danger { background: transparent; color: #666; border: 1px solid #333; }
+  .conn-btn-danger:hover { color: #f87171; border-color: #f87171; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 16px;
+    padding: 24px;
+    width: 440px;
+    max-width: 90vw;
+  }
+
+  .modal h2 { font-size: 16px; margin-bottom: 4px; color: #fff; }
+  .modal .modal-subtitle { font-size: 12px; color: #888; margin-bottom: 20px; }
+
+  .modal label {
+    display: block;
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 4px;
+    margin-top: 14px;
+  }
+
+  .modal .hint {
+    font-size: 11px;
+    color: #555;
+    margin-top: 4px;
+  }
+
+  .modal input {
+    width: 100%;
+    padding: 10px 12px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    font-family: monospace;
+    outline: none;
+  }
+
+  .modal input:focus { border-color: #555; }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+
+  .test-result {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    display: none;
+  }
+
+  .test-success { background: #16402b; color: #4ade80; display: block; }
+  .test-error { background: #3f1616; color: #f87171; display: block; }
+  .test-loading { background: #282828; color: #888; display: block; }
+
+  @media (max-width: 700px) {
+    .connector-grid { grid-template-columns: 1fr; }
+    .content { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:24px;">
+    <h1>IRIS</h1>
+    <div class="nav-tabs">
+      <a href="/" class="nav-tab">Projects</a>
+      <a href="/settings" class="nav-tab active">Settings</a>
+    </div>
+  </div>
+  <div class="status-bar">
+    <div class="status-pill" id="statusClaude">
+      <span class="status-dot dot-red"></span>
+      <span>Claude CLI</span>
+    </div>
+    <div class="status-pill" id="statusConnectors">
+      <span class="status-dot dot-red"></span>
+      <span id="connectorCount">0/0 connected</span>
+    </div>
+    <button onclick="logout()" style="background:#222;color:#aaa;border:none;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;">Log out</button>
+  </div>
+</header>
+
+<div class="content">
+  <div class="section-title">Required</div>
+  <div class="connector-grid" id="requiredGrid"></div>
+
+  <div class="section-title">Communication</div>
+  <div class="connector-grid" id="communicationGrid"></div>
+
+  <div class="section-title">Memory & Storage</div>
+  <div class="connector-grid" id="memoryGrid"></div>
+
+  <div class="section-title">AI & Tools</div>
+  <div class="connector-grid" id="aiGrid"></div>
+
+  <div class="section-title">Media</div>
+  <div class="connector-grid" id="mediaGrid"></div>
+
+  <div class="section-title" style="margin-top:48px;">Account</div>
+  <div style="background:#181818;border:1px solid #252525;border-radius:12px;padding:20px;max-width:400px;">
+    <div style="font-size:14px;color:#fff;margin-bottom:16px;font-weight:500;">Change Password</div>
+    <form id="changePwForm" style="display:flex;flex-direction:column;gap:12px;">
+      <input type="password" id="currentPw" placeholder="Current password" style="background:#111;border:1px solid #333;border-radius:8px;padding:10px 12px;color:#fff;font-size:14px;outline:none;">
+      <input type="password" id="newPw" placeholder="New password (min 6 chars)" style="background:#111;border:1px solid #333;border-radius:8px;padding:10px 12px;color:#fff;font-size:14px;outline:none;">
+      <p id="pwMsg" style="font-size:13px;display:none;"></p>
+      <button type="submit" style="background:#fff;color:#000;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;width:fit-content;">Update Password</button>
+    </form>
+  </div>
+</div>
+
+<!-- Connect Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2 id="modalTitle">Connect</h2>
+    <div class="modal-subtitle" id="modalDesc"></div>
+    <div id="modalFields"></div>
+    <div class="test-result" id="testResult"></div>
+    <div class="modal-actions">
+      <button class="conn-btn conn-btn-test" id="testBtn" onclick="testConnector()">Test Connection</button>
+      <button class="conn-btn conn-btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="conn-btn conn-btn-primary" onclick="saveConnector()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let connectors = [];
+let currentConnector = null;
+
+async function fetchConnectors() {
+  try {
+    const res = await fetch('/api/connectors');
+    connectors = await res.json();
+    render();
+  } catch (e) {
+    console.error('Failed to fetch connectors', e);
+  }
+}
+
+async function fetchStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+
+    const claudeEl = document.getElementById('statusClaude');
+    const dot = claudeEl.querySelector('.status-dot');
+    if (data.claude_cli) {
+      dot.className = 'status-dot dot-green';
+    } else {
+      dot.className = 'status-dot dot-red';
+    }
+
+    const total = data.connectors_total;
+    const connected = data.connectors_connected;
+    document.getElementById('connectorCount').textContent = `${connected}/${total} connected`;
+
+    const connDot = document.getElementById('statusConnectors').querySelector('.status-dot');
+    if (connected === total) {
+      connDot.className = 'status-dot dot-green';
+    } else if (connected > 0) {
+      connDot.className = 'status-dot dot-yellow';
+    } else {
+      connDot.className = 'status-dot dot-red';
+    }
+  } catch (e) {}
+}
+
+function render() {
+  const buckets = {
+    required: [],
+    communication: [],
+    memory: [],
+    ai: [],
+    media: [],
+  };
+
+  connectors.forEach(c => {
+    if (c.required) {
+      buckets.required.push(c);
+    } else if (c.category === 'communication') {
+      buckets.communication.push(c);
+    } else if (c.category === 'memory') {
+      buckets.memory.push(c);
+    } else if (c.category === 'ai') {
+      buckets.ai.push(c);
+    } else if (c.category === 'media') {
+      buckets.media.push(c);
+    }
+  });
+
+  document.getElementById('requiredGrid').innerHTML = buckets.required.map(cardHTML).join('');
+  document.getElementById('communicationGrid').innerHTML = buckets.communication.map(cardHTML).join('');
+  document.getElementById('memoryGrid').innerHTML = buckets.memory.map(cardHTML).join('');
+  document.getElementById('aiGrid').innerHTML = buckets.ai.map(cardHTML).join('');
+  document.getElementById('mediaGrid').innerHTML = buckets.media.map(cardHTML).join('');
+
+  // Hide empty sections
+  ['communication', 'memory', 'ai', 'media'].forEach(key => {
+    const grid = document.getElementById(key + 'Grid');
+    const title = grid.previousElementSibling;
+    if (buckets[key].length === 0) {
+      grid.style.display = 'none';
+      title.style.display = 'none';
+    } else {
+      grid.style.display = '';
+      title.style.display = '';
+    }
+  });
+}
+
+function cardHTML(c) {
+  const isConnected = c.status === 'connected';
+  const badgeClass = isConnected ? 'badge-connected' : (c.required ? 'badge-required' : 'badge-disconnected');
+  const badgeText = isConnected ? 'Connected' : (c.required ? 'Required' : 'Not connected');
+
+  const fieldPills = (c.fields || []).map(f => {
+    const isSet = c.fields_configured && c.fields_configured[f.key];
+    return `<span class="field-pill ${isSet ? 'set' : ''}">${f.label}</span>`;
+  }).join('');
+
+  const actions = isConnected
+    ? `<button class="conn-btn conn-btn-test" onclick="testSingle('${c.name}')">Test</button>
+       <button class="conn-btn conn-btn-ghost" onclick="openModal('${c.name}')">Update</button>
+       <button class="conn-btn conn-btn-danger" onclick="disconnectConnector('${c.name}')">Disconnect</button>`
+    : `<button class="conn-btn conn-btn-primary" onclick="openModal('${c.name}')">Connect</button>`;
+
+  const verified = c.last_verified
+    ? `<span style="font-size:10px;color:#555;margin-left:8px;">Verified ${timeAgo(c.last_verified)}</span>`
+    : '';
+
+  return `
+    <div class="connector-card">
+      <div class="connector-header">
+        <span class="connector-name">${esc(c.display_name)}</span>
+        <span class="connector-badge ${badgeClass}">${badgeText}${verified}</span>
+      </div>
+      <div class="connector-desc">${esc(c.description || '')}</div>
+      ${fieldPills ? `<div class="connector-fields">${fieldPills}</div>` : ''}
+      <div class="connector-actions">${actions}</div>
+    </div>`;
+}
+
+function openModal(name) {
+  currentConnector = connectors.find(c => c.name === name);
+  if (!currentConnector) return;
+
+  document.getElementById('modalTitle').textContent = `Connect ${currentConnector.display_name}`;
+  document.getElementById('modalDesc').textContent = currentConnector.description || '';
+
+  const fieldsDiv = document.getElementById('modalFields');
+  if (!currentConnector.fields || currentConnector.fields.length === 0) {
+    fieldsDiv.innerHTML = '<p style="color:#888;font-size:13px;">No credentials needed. Click Test to verify.</p>';
+  } else {
+    fieldsDiv.innerHTML = currentConnector.fields.map(f => {
+      const isSet = currentConnector.fields_configured && currentConnector.fields_configured[f.key];
+      return `
+        <label>${f.label}</label>
+        <input type="${f.sensitive ? 'password' : 'text'}" id="field_${f.key}"
+               placeholder="${isSet ? '(already set — leave blank to keep)' : f.hint || ''}"
+               autocomplete="off">
+        ${f.hint ? `<div class="hint">${esc(f.hint)}</div>` : ''}`;
+    }).join('');
+  }
+
+  document.getElementById('testResult').className = 'test-result';
+  document.getElementById('testResult').style.display = 'none';
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('modalOverlay').classList.remove('active');
+  currentConnector = null;
+}
+
+async function saveConnector() {
+  if (!currentConnector) return;
+
+  const data = {};
+  let hasValue = false;
+
+  (currentConnector.fields || []).forEach(f => {
+    const input = document.getElementById(`field_${f.key}`);
+    if (input && input.value.trim()) {
+      data[f.key] = input.value.trim();
+      hasValue = true;
+    }
+  });
+
+  if (!hasValue && currentConnector.fields && currentConnector.fields.length > 0) {
+    // If nothing entered and fields already set, just close
+    if (currentConnector.status === 'connected') {
+      closeModal();
+      return;
+    }
+    showTestResult('Enter at least one credential.', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/connectors/${currentConnector.name}/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (result.success) {
+      closeModal();
+      fetchConnectors();
+      fetchStatus();
+    } else {
+      showTestResult(result.error || 'Failed to save', 'error');
+    }
+  } catch (e) {
+    showTestResult('Connection error', 'error');
+  }
+}
+
+async function testConnector() {
+  if (!currentConnector) return;
+  showTestResult('Testing...', 'loading');
+
+  try {
+    const res = await fetch(`/api/connectors/${currentConnector.name}/test`, {
+      method: 'POST',
+    });
+    const result = await res.json();
+    if (result.success) {
+      showTestResult(result.message || 'Connection successful', 'success');
+      fetchConnectors();
+      fetchStatus();
+    } else {
+      showTestResult(result.error || 'Test failed', 'error');
+    }
+  } catch (e) {
+    showTestResult('Connection error', 'error');
+  }
+}
+
+async function testSingle(name) {
+  try {
+    const res = await fetch(`/api/connectors/${name}/test`, { method: 'POST' });
+    const result = await res.json();
+    fetchConnectors();
+    fetchStatus();
+  } catch (e) {}
+}
+
+async function disconnectConnector(name) {
+  if (!confirm(`Disconnect ${name}?`)) return;
+  try {
+    await fetch(`/api/connectors/${name}/disconnect`, { method: 'POST' });
+    fetchConnectors();
+    fetchStatus();
+  } catch (e) {}
+}
+
+function showTestResult(msg, type) {
+  const el = document.getElementById('testResult');
+  el.textContent = msg;
+  el.className = `test-result test-${type}`;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  return days + 'd ago';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+async function logout() {
+  await fetch('/api/auth/logout', {method:'POST'});
+  window.location.href = '/login';
+}
+
+document.getElementById('changePwForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById('pwMsg');
+  const current = document.getElementById('currentPw').value;
+  const newPw = document.getElementById('newPw').value;
+  msg.style.display = 'none';
+
+  if (newPw.length < 6) {
+    msg.textContent = 'At least 6 characters.';
+    msg.style.color = '#f87171';
+    msg.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({current_password: current, new_password: newPw})
+    });
+    const data = await res.json();
+    if (data.success) {
+      msg.textContent = 'Password updated.';
+      msg.style.color = '#4ade80';
+      document.getElementById('currentPw').value = '';
+      document.getElementById('newPw').value = '';
+    } else {
+      msg.textContent = data.error || 'Something went wrong.';
+      msg.style.color = '#f87171';
+    }
+    msg.style.display = 'block';
+  } catch {
+    msg.textContent = 'Connection error.';
+    msg.style.color = '#f87171';
+    msg.style.display = 'block';
+  }
+});
+
+// Initial load
+fetchConnectors();
+fetchStatus();
+setInterval(() => { fetchStatus(); }, 10000);
+</script>
+
+</body>
+</html>

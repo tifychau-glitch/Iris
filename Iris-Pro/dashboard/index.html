@@ -455,13 +455,20 @@
 <body>
 
 <header>
-  <h1>Project Dashboard</h1>
+  <div style="display:flex;align-items:center;gap:24px;">
+    <h1>IRIS</h1>
+    <div style="display:flex;gap:4px;background:#181818;border-radius:10px;padding:3px;">
+      <a href="/" style="padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;background:#333;color:#fff;text-decoration:none;">Projects</a>
+      <a href="/settings" style="padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;color:#888;text-decoration:none;">Settings</a>
+    </div>
+  </div>
   <div style="display:flex;align-items:center;gap:16px;">
     <div class="status-bar">
       <span class="pulse"></span>
       <span id="lastUpdated">Loading...</span>
     </div>
     <button class="add-btn" onclick="openNewModal()">+ New Project</button>
+    <button class="add-btn" style="background:#222;color:#aaa;font-weight:500;" onclick="logout()">Log out</button>
   </div>
 </header>
 
@@ -840,6 +847,11 @@ function renderAccChart(dailyData) {
 }
 
 // Poll every 3 seconds for live updates
+async function logout() {
+  await fetch('/api/auth/logout', {method:'POST'});
+  window.location.href = '/login';
+}
+
 fetchProjects();
 fetchAccountability();
 pollTimer = setInterval(() => { fetchProjects(); fetchAccountability(); }, 3000);

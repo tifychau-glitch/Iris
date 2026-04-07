@@ -1,0 +1,111 @@
+# Connector Registry — defines all integrations IRIS can use
+# Each connector lists the fields needed and how to validate them
+
+connectors:
+  - name: claude_cli
+    display_name: Claude Code
+    category: ai
+    required: true
+    description: "AI reasoning engine (subscription-based)"
+    fields: []
+    test_command: "claude --version"
+
+  - name: telegram
+    display_name: Telegram
+    category: communication
+    required: true
+    description: "Message users via Telegram bot"
+    fields:
+      - key: TELEGRAM_BOT_TOKEN
+        label: Bot Token
+        hint: "Get from @BotFather in Telegram"
+        sensitive: true
+      - key: TELEGRAM_USER_ID
+        label: Your User ID
+        hint: "Message @userinfobot on Telegram to get your numeric ID"
+        sensitive: false
+    test_script: test_telegram.py
+
+  - name: gmail
+    display_name: Gmail
+    category: communication
+    required: false
+    description: "Send emails via Gmail SMTP"
+    fields:
+      - key: SMTP_USER
+        label: Gmail Address
+        hint: "Your Gmail address"
+        sensitive: false
+      - key: SMTP_PASSWORD
+        label: App Password
+        hint: "Generate at myaccount.google.com/apppasswords"
+        sensitive: true
+    test_script: test_gmail.py
+
+  - name: upstash_vector
+    display_name: Upstash Vector
+    category: memory
+    required: false
+    description: "Long-term vector memory for cross-session recall"
+    fields:
+      - key: UPSTASH_VECTOR_REST_URL
+        label: REST URL
+        hint: "From console.upstash.com — starts with https://"
+        sensitive: false
+      - key: UPSTASH_VECTOR_REST_TOKEN
+        label: REST Token
+        hint: "From console.upstash.com"
+        sensitive: true
+    test_script: test_upstash.py
+
+  - name: openai
+    display_name: OpenAI
+    category: ai
+    required: false
+    description: "Used by mem0 for embeddings (~$0.50/mo)"
+    fields:
+      - key: OPENAI_API_KEY
+        label: API Key
+        hint: "From platform.openai.com — starts with sk-"
+        sensitive: true
+    test_script: test_openai.py
+
+  - name: slack
+    display_name: Slack
+    category: communication
+    required: false
+    description: "Send messages to Slack channels"
+    fields:
+      - key: SLACK_BOT_TOKEN
+        label: Bot Token
+        hint: "From api.slack.com/apps"
+        sensitive: true
+      - key: SLACK_CHANNEL_ID
+        label: Channel ID
+        hint: "Right-click channel > View channel details > copy ID"
+        sensitive: false
+    test_script: test_slack.py
+
+  - name: anthropic
+    display_name: Anthropic
+    category: ai
+    required: false
+    description: "Direct Anthropic API access (if AI_PROVIDER=anthropic)"
+    fields:
+      - key: ANTHROPIC_API_KEY
+        label: API Key
+        hint: "From console.anthropic.com — starts with sk-ant-"
+        sensitive: true
+    test_script: test_anthropic.py
+
+  - name: auphonic
+    display_name: Auphonic
+    category: media
+    required: false
+    description: "Video processing and YouTube upload"
+    fields:
+      - key: AUPHONIC_API_KEY
+        label: API Key
+        hint: "From auphonic.com/engine/account"
+        sensitive: true
+    test_script: test_auphonic.py
