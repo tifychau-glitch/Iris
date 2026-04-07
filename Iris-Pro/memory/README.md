@@ -14,7 +14,7 @@
 - Read at session start for continuity
 - Weekly review skill reads 7 days of these for patterns
 
-## Tier 3 (Optional): Long-Term Memory — mem0 + Pinecone
+## Tier 3 (Optional): Long-Term Memory — mem0 + Upstash Vector
 - Cloud-stored vector memory with semantic search
 - Automatic fact extraction and deduplication
 - See docs/MEMORY-UPGRADE.md for setup instructions
