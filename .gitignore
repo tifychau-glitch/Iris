@@ -22,3 +22,6 @@ Thumbs.db
 
 # Temporary
 .tmp/
+
+# Standalone landing page repo (cloned separately, lives at this path)
+iris-landing-page/
