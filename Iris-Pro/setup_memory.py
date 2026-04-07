@@ -3,19 +3,20 @@
 Memory System Installer for AI OS
 ==================================
 
-Configures and activates the 3-tier persistent memory system (mem0 + Pinecone).
+Configures and activates the 3-tier persistent memory system (mem0 + Upstash Vector).
 The memory scripts already exist in .claude/skills/memory/scripts/ — this installer
 sets up the configuration, dependencies, and hooks to activate them.
 
 Usage:
     python3 setup_memory.py                                                # Interactive
-    python3 setup_memory.py --user-id "jane" --pinecone-index "my-memory"  # Non-interactive
+    python3 setup_memory.py --user-id "jane" --upstash-collection "my-memory"  # Non-interactive
     python3 setup_memory.py --dry-run                                      # Preview changes
 
 Prerequisites:
     - Python 3.9+
     - OPENAI_API_KEY in .env
-    - PINECONE_API_KEY in .env
+    - UPSTASH_VECTOR_REST_URL in .env
+    - UPSTASH_VECTOR_REST_TOKEN in .env
 """
 
 import argparse
@@ -37,7 +38,7 @@ SETTINGS_PATH = PROJECT_ROOT / ".claude" / "settings.local.json"
 ENV_PATH = PROJECT_ROOT / ".env"
 
 REQUIRED_PACKAGES = ["mem0ai", "pyyaml", "python-dotenv", "requests", "openai"]
-REQUIRED_ENV_VARS = ["OPENAI_API_KEY", "PINECONE_API_KEY"]
+REQUIRED_ENV_VARS = ["OPENAI_API_KEY", "UPSTASH_VECTOR_REST_URL", "UPSTASH_VECTOR_REST_TOKEN"]
 
 REQUIRED_DIRS = [
     "data/capture_markers",
@@ -155,27 +156,27 @@ def set_user_id(user_id, dry_run=False):
     for line in lines:
         stripped = line.strip()
         if stripped.startswith("MEM0_USER_ID=") or stripped.startswith("# MEM0_USER_ID="):
-            new_lines.append(f"MEM0_USER_ID={user_id}")
+            new_lines.append(f'MEM0_USER_ID="{user_id}"')
             found = True
         else:
             new_lines.append(line)
 
     if not found:
         new_lines.append(f"\n# mem0 user ID (set by setup_memory.py)")
-        new_lines.append(f"MEM0_USER_ID={user_id}")
+        new_lines.append(f'MEM0_USER_ID="{user_id}"')
 
     if dry_run:
-        print(f"  Would set MEM0_USER_ID={user_id} in .env")
+        print(f'  Would set MEM0_USER_ID="{user_id}" in .env')
         return True
 
     ENV_PATH.write_text("\n".join(new_lines) + "\n")
-    print(f"  Set MEM0_USER_ID={user_id} in .env")
+    print(f'  Set MEM0_USER_ID="{user_id}" in .env')
     return True
 
 
-def update_pinecone_index(index_name, dry_run=False):
+def update_upstash_collection(index_name, dry_run=False):
     """Update collection_name in mem0_config.yaml."""
-    print(f"\n--- Setting Pinecone index: {index_name} ---")
+    print(f"\n--- Setting Upstash collection: {index_name} ---")
 
     if not CONFIG_PATH.exists():
         print(f"  [!] Config not found at {CONFIG_PATH}")
@@ -209,7 +210,7 @@ def update_stop_hook(dry_run=False):
     advanced_cmd = "python3 .claude/skills/memory/scripts/auto_capture.py"
 
     if not SETTINGS_PATH.exists():
-        print(f"  [!] {SETTINGS_PATH} not found — run setup.sh first")
+        print(f"  [!] {SETTINGS_PATH} not found — run install.sh first")
         return False
 
     content = SETTINGS_PATH.read_text()
@@ -299,11 +300,11 @@ def rebuild_fts_index(dry_run=False):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="AI OS Memory System Installer — configures mem0 + Pinecone"
+        description="AI OS Memory System Installer — configures mem0 + Upstash Vector"
     )
     parser.add_argument("--user-id", type=str, help="Your mem0 user ID (e.g., your name)")
-    parser.add_argument("--pinecone-index", type=str, default="ai-os-memory",
-                        help="Pinecone index/collection name (default: ai-os-memory)")
+    parser.add_argument("--upstash-collection", type=str, default="ai-os-memory",
+                        help="Upstash Vector collection name (default: ai-os-memory)")
     parser.add_argument("--dry-run", action="store_true", help="Preview changes without applying")
     parser.add_argument("--skip-packages", action="store_true", help="Skip pip install")
 
@@ -342,7 +343,7 @@ def main():
         ("Install packages", lambda: install_packages(args.dry_run) if not args.skip_packages else True),
         ("Create directories", lambda: create_directories(args.dry_run)),
         ("Set user ID", lambda: set_user_id(user_id, args.dry_run)),
-        ("Set Pinecone index", lambda: update_pinecone_index(args.pinecone_index, args.dry_run)),
+        ("Set Upstash collection", lambda: update_upstash_collection(args.upstash_collection, args.dry_run)),
         ("Update Stop hook", lambda: update_stop_hook(args.dry_run)),
         ("Initialize search index", lambda: rebuild_fts_index(args.dry_run)),
     ]

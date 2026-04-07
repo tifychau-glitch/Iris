@@ -1,4 +1,4 @@
-# Memory Upgrade: mem0 + Pinecone (Tier 3)
+# Memory Upgrade: mem0 + Upstash Vector (Tier 3)
 
 Upgrade from basic memory (MEMORY.md + daily logs) to a full vector memory system with automatic fact extraction, deduplication, and semantic search.
 
@@ -10,7 +10,7 @@ Upgrade from basic memory (MEMORY.md + daily logs) to a full vector memory syste
 | Session history | Daily logs | Daily logs + vector search |
 | Deduplication | Manual | Automatic (ADD/UPDATE/DELETE/NOOP) |
 | Search | Read the file | Semantic search (meaning-based) |
-| Storage | Local files | Cloud vectors (Pinecone free tier) |
+| Storage | Local files | Cloud vectors (Upstash Vector free tier) |
 | Cost | $0/month | ~$0.04/month |
 
 ## Architecture
@@ -29,9 +29,9 @@ Upgrade from basic memory (MEMORY.md + daily logs) to a full vector memory syste
           |
           v
 +----------------------------------------------------------+
-|  TIER 3: LONG-TERM MEMORY — mem0 + Pinecone              |
+|  TIER 3: LONG-TERM MEMORY — mem0 + Upstash Vector        |
 |  Every fact as vectors. Semantic search.                  |
-|  Auto-dedup. Cloud-stored. 100K vectors free.            |
+|  Auto-dedup. Cloud-stored. 10K queries/day free.         |
 +----------------------------------------------------------+
 ```
 
@@ -41,7 +41,7 @@ Upgrade from basic memory (MEMORY.md + daily logs) to a full vector memory syste
 New fact: "User likes dark mode"
         |
         v
-Search Pinecone for similar memories
+Search Upstash Vector for similar memories
         |
 +--Found similar--+--------Not found--------+
 |                  |                          |
@@ -64,14 +64,14 @@ Four outcomes per fact:
 
 - Python 3.9+
 - OpenAI API key (for GPT-4.1 Nano extraction + embeddings)
-- Pinecone API key (free at pinecone.io)
+- Upstash Vector credentials (free at console.upstash.com — you need the REST URL and REST token)
 
 ## Quick Setup
 
 The easiest way to install the full memory system:
 
 ```bash
-python3 setup_memory.py --user-id "your_name" --pinecone-index "your-memory-index"
+python3 setup_memory.py --user-id "your_name" --upstash-collection "your-memory-index"
 ```
 
 Use `--dry-run` to preview changes first. Use `--help` for all options.
@@ -79,7 +79,7 @@ Use `--dry-run` to preview changes first. Use `--help` for all options.
 The installer:
 1. Installs pip dependencies (mem0ai, pyyaml, python-dotenv, requests, openai)
 2. Writes `MEM0_USER_ID` to your `.env`
-3. Updates the Pinecone collection name in the config
+3. Updates the Upstash collection name in the config
 4. Switches the Stop hook from basic to advanced (auto-capture)
 5. Creates required directories
 6. Initializes the FTS5 search index
@@ -100,17 +100,18 @@ pip3 install mem0ai pyyaml python-dotenv requests openai
 
 ```bash
 OPENAI_API_KEY=sk-your-openai-key
-PINECONE_API_KEY=your-pinecone-key
+UPSTASH_VECTOR_REST_URL=https://your-index-url.upstash.io
+UPSTASH_VECTOR_REST_TOKEN=your-upstash-token
 MEM0_USER_ID=your_name
 ```
 
 ### 3. Configuration
 
-The mem0 config is at `.claude/skills/memory/references/mem0_config.yaml`. The defaults work out of the box. To customize the Pinecone collection name:
+The mem0 config is at `.claude/skills/memory/references/mem0_config.yaml`. The defaults work out of the box. To customize the Upstash Vector collection name:
 
 ```yaml
 vector_store:
-  provider: "pinecone"
+  provider: "upstash_vector"
   config:
     collection_name: "your-custom-name"  # Change this
 ```
@@ -155,7 +156,7 @@ python3 .claude/skills/memory/scripts/smart_search.py --query "what tools does u
 python3 .claude/skills/memory/scripts/mem0_search.py --query "API rate limits" --limit 10
 
 # Add a memory manually
-python3 .claude/skills/memory/scripts/mem0_add.py --content "User prefers Pinecone for vectors"
+python3 .claude/skills/memory/scripts/mem0_add.py --content "User prefers Upstash Vector for vectors"
 
 # Sync to MEMORY.md
 python3 .claude/skills/memory/scripts/mem0_sync_md.py
@@ -192,17 +193,17 @@ All scripts are in `.claude/skills/memory/scripts/`:
 |-----------|-------------|
 | GPT-4.1 Nano (extraction) | ~$0.03 |
 | Embeddings (text-embedding-3-small) | ~$0.006 |
-| Pinecone (free tier) | $0.00 |
+| Upstash Vector (free tier) | $0.00 |
 | SQLite (local) | $0.00 |
 | **Total** | **~$0.04** |
 
 ## Storage Longevity
 
 ```
-Pinecone free tier: 100,000 vectors
+Upstash Vector free tier: 10K queries/day, 200M vector x dimensions
 
-At 20 facts/day:  100,000 / 20 = 5,000 days = 13.7 years
-At 60 facts/day:  100,000 / 60 = 1,667 days = 4.5 years
+At 20 facts/day:  well within free tier daily query limits
+At 60 facts/day:  still within free tier limits
 
 With dedup, real growth is slower — many facts merge
 rather than creating new vectors.

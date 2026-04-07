@@ -12,7 +12,7 @@ A free, open-source template that transforms a Claude Code workspace into a stru
 
 ## What's Inside
 
-### 18 Skills (Your Programs)
+### 25 Skills (Your Programs)
 
 **Starter Skills (zero config):**
 
@@ -37,7 +37,7 @@ A free, open-source template that transforms a Claude Code workspace into a stru
 | `gamma-slides` | Markdown → professional slide deck via Gamma |
 | `build-website` | PRISM framework → premium static websites |
 | `build-app` | ATLAS framework → full-stack applications |
-| `memory` | mem0 + Pinecone — semantic search, auto-capture, dedup |
+| `memory` | mem0 + Upstash Vector — semantic search, auto-capture, dedup |
 | `telegram` | Mobile access — message your AI assistant from your phone |
 | `iris-accountability-engine` | Tracks commitments vs completions, dynamic accountability levels |
 | `plugin-builder` | Package skills into distributable plugins |
@@ -54,7 +54,7 @@ A free, open-source template that transforms a Claude Code workspace into a stru
 
 1. **MEMORY.md** — Always loaded. Your persistent brain.
 2. **Daily logs** — Session history. What happened each day.
-3. **Vector memory** (optional) — mem0 + Pinecone. Automatic fact extraction, semantic search, deduplication. ~$0.04/month.
+3. **Vector memory** (optional) — mem0 + Upstash Vector. Automatic fact extraction, semantic search, deduplication. ~$0.04/month.
 
 ### Hooks (Your Security)
 
@@ -67,9 +67,9 @@ A free, open-source template that transforms a Claude Code workspace into a stru
 ```
 iris/
 ├── CLAUDE.md                    # Kernel (~80 lines)
-├── setup.sh                     # One-command setup
+├── install.sh                   # One-command setup
 ├── .claude/
-│   ├── skills/                  # 18 skills (your programs)
+│   ├── skills/                  # 25 skills (your programs)
 │   ├── agents/                  # 3 subagents (your workers)
 │   └── rules/                   # Modular system rules
 ├── context/                     # Your business + voice (filled by wizard)
@@ -99,7 +99,7 @@ iris/
 - **Claude Code subscription** ($20-200/mo)
 - **Python 3** — for scripts (most systems have this)
 - **Anthropic API key** — for Iris to think
-- **Pinecone API key** (free tier) — for long-term memory
+- **Upstash Vector** (free tier) — REST URL + token for long-term memory
 - **Telegram** — so Iris can reach you
 
 ## Extending

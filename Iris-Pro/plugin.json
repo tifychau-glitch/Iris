@@ -1,7 +1,7 @@
 {
   "name": "ai-os",
   "version": "1.0.0",
-  "description": "Iris — AI accountability coach with 18 skills, 3 agents, 3-tier memory, and automation hooks.",
+  "description": "Iris — AI accountability coach with 25 skills, 3 agents, 3-tier memory, and automation hooks.",
   "author": "Tiffany Chau",
   "license": "MIT",
   "skills": [

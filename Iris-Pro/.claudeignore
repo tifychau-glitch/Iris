@@ -1,0 +1,36 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Binary / SQLite
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/capture_markers/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+
+# Generated HTML visualizations
+iris-architecture.html
+iris-system-map.html
+
+# Bulk advisor source material (profile.md + source-index.md are sufficient)
+context/advisors/hormozi/sources/
+
+# Duplicate old claude/ directory (replaced by .claude/)
+claude/
+
+# Temp & operational logs
+.tmp/
+logs/
+memory/logs/
+
+# Dashboard test scripts
+dashboard/scripts/

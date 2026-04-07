@@ -10,7 +10,7 @@ The AI OS is a Claude Code workspace structured as an operating system. It turns
 
 - Knows your business (context files filled by a setup wizard)
 - Writes in your voice (voice guide captured during setup)
-- Runs structured workflows (18 skills — from research to slide generation)
+- Runs structured workflows (25 skills — from research to slide generation)
 - Remembers across sessions (3-tier memory system)
 - Enforces safety rules (hooks that block dangerous actions)
 - Delegates to specialists (3 custom agents with restricted permissions)
@@ -62,7 +62,7 @@ Every piece of the AI OS maps to a real operating system concept:
 |                                                               |
 |  PROGRAMS         WORKERS          PACKAGE MANAGER            |
 |  .claude/skills/  .claude/agents/  plugin.json                |
-|  18 skills        3 agents         Distributable bundles      |
+|  25 skills        3 agents         Distributable bundles      |
 |                                                               |
 |  SECURITY LAYER — Hooks                                       |
 |  Stop → memory    PreToolUse → guardrails                     |
@@ -101,8 +101,8 @@ aios/
 ├── ARCHITECTURE.md                              # THIS FILE — Full system documentation
 ├── README.md                                    # Public-facing README with quickstart
 ├── LICENSE                                      # MIT
-├── setup.sh                                     # One-command setup script
-├── setup_memory.py                              # Memory system installer (mem0 + Pinecone)
+├── install.sh                                   # One-command setup script
+├── setup_memory.py                              # Memory system installer (mem0 + Upstash Vector)
 ├── plugin.json                                  # Plugin manifest for distribution
 ├── .env.example                                 # API key template
 ├── .gitignore                                   # Secrets, logs, databases excluded
@@ -115,7 +115,7 @@ aios/
 │   │   ├── guardrails.md                        # Safety rules
 │   │   └── memory-protocol.md                   # Memory management rules
 │   │
-│   ├── skills/                                  # PROGRAMS — 18 skills
+│   ├── skills/                                  # PROGRAMS — 25 skills
 │   │   │
 │   │   │  # === STARTER SKILLS (zero config) ===
 │   │   ├── iris-setup/                          # Setup wizard (THE killer feature)
@@ -175,7 +175,7 @@ aios/
 │   │   ├── build-app/                           # ATLAS framework → full-stack apps
 │   │   │   └── SKILL.md                         # 5-phase architect → stress-test
 │   │   │
-│   │   ├── memory/                              # mem0 + Pinecone persistent memory
+│   │   ├── memory/                              # mem0 + Upstash Vector persistent memory
 │   │   │   ├── SKILL.md                         # Search, add, sync, list, delete
 │   │   │   ├── scripts/
 │   │   │   │   ├── mem0_client.py               # Factory + secret sanitizer
@@ -188,7 +188,7 @@ aios/
 │   │   │   │   ├── mem0_sync_md.py              # Sync mem0 → MEMORY.md
 │   │   │   │   └── daily_log.py                 # Session log writer
 │   │   │   └── references/
-│   │   │       └── mem0_config.yaml             # mem0 + Pinecone configuration
+│   │   │       └── mem0_config.yaml             # mem0 + Upstash Vector configuration
 │   │   │
 │   │   └── telegram/                            # Telegram mobile access
 │   │       ├── SKILL.md                         # Bot daemon with mem0 integration
@@ -235,7 +235,7 @@ aios/
     ├── SKILLS-GUIDE.md                          # How to create custom skills
     ├── MCP-SERVERS.md                           # Add external service access
     ├── AUTOMATION.md                            # Cron + headless mode scheduling
-    ├── MEMORY-UPGRADE.md                        # mem0 + Pinecone (Tier 3 memory)
+    ├── MEMORY-UPGRADE.md                        # mem0 + Upstash Vector (Tier 3 memory)
     └── UPGRADE-PATHS.md                         # Gmail, Telegram, n8n, vectors
 ```
 
@@ -267,7 +267,7 @@ Detailed rules go in `.claude/rules/*.md` (modular, loaded automatically). Detai
 
 ### 3. Zero API Keys for Core
 
-The 7 starter skills work with ONLY a Claude Code subscription. No OpenAI key, no Pinecone, no Gmail API. This means:
+The 7 starter skills work with ONLY a Claude Code subscription. No OpenAI key, no Upstash, no Gmail API. This means:
 
 - `research` uses WebSearch (built into Claude Code)
 - `email-assistant` works by paste (user pastes email text)
@@ -282,10 +282,10 @@ Power skills unlock with optional API keys. This keeps the onboarding friction a
 ```
 Tier 1: MEMORY.md        → Always in prompt. Curated facts. ~200 lines.
 Tier 2: Daily logs        → Session history. Append-only. Read at session start.
-Tier 3: mem0 + Pinecone   → Optional. Cloud vectors. Semantic search. Auto-dedup.
+Tier 3: mem0 + Upstash    → Optional. Cloud vectors. Semantic search. Auto-dedup.
 ```
 
-Tier 1+2 ship as default (zero config). Tier 3 is documented as an upgrade in docs/MEMORY-UPGRADE.md. The mem0 system costs ~$0.04/month and stores 100K vectors for free (~13 years at normal use). It automatically extracts facts, deduplicates them (ADD/UPDATE/DELETE/NOOP), and resolves contradictions.
+Tier 1+2 ship as default (zero config). Tier 3 is documented as an upgrade in docs/MEMORY-UPGRADE.md. The mem0 system costs ~$0.04/month with Upstash Vector's free tier (10K queries/day, 200M vector dimensions). It automatically extracts facts, deduplicates them (ADD/UPDATE/DELETE/NOOP), and resolves contradictions.
 
 ### 5. Hooks for Safety, Not Just Automation
 
@@ -320,6 +320,33 @@ model: opus     # Complex reasoning: architecture, creative work (~$15/M tokens)
 
 Combined with `context: fork`, this spawns a cheaper subagent. A content pipeline running on Sonnet costs ~5x less than running on Opus, with comparable quality for structured tasks.
 
+### 7b. Provider-Agnostic AI Backend
+
+Python scripts route reasoning calls through `lib/ai_provider.py`, which supports multiple LLM providers. Users aren't locked into any single provider.
+
+**How it works:**
+
+| Layer | What It Controls | Provider |
+|-------|-----------------|----------|
+| **Orchestration** (Claude Code harness) | Skill routing, subagents, frontmatter `model:` | Always Anthropic |
+| **Script reasoning** (`ai.reason()` calls) | Python script AI calls | User's choice |
+
+**Switching providers:**
+1. Set `AI_PROVIDER=openai` (or `google`, `anthropic`) in `.env`
+2. Set the corresponding API key
+3. `pip install litellm` (not needed for `claude-cli`)
+
+**Abstract tiers** decouple scripts from specific models:
+
+```python
+ai.reason(system, msg, tier="default")    # Everyday work
+ai.reason(system, msg, tier="fast")       # Low latency
+ai.reason(system, msg, tier="cheap")      # High volume
+ai.reason(system, msg, tier="powerful")   # Complex reasoning
+```
+
+Tiers map to provider-specific models in `args/preferences.yaml`. Update the mapping when new models release — no code changes needed. Legacy names (`opus`, `sonnet`, `haiku`) still work and auto-map to tiers.
+
 ### 8. Python Scripts Over MCP for Frequent Operations
 
 MCP servers add ~15K tokens each to context. 4 servers = 60K tokens overhead. Python scripts calling APIs directly via `requests` are cheaper for operations that happen frequently or follow the same pattern every time.
@@ -333,7 +360,7 @@ The AI OS is a workspace template (writable context/, memory/, data/). Plugins a
 
 - **Full OS** → GitHub repo (git clone for devs, Download ZIP for non-coders)
 - **Skill packs** → Could be plugins (content-pack, sales-pack, ops-pack)
-- **setup.sh** → Handles initialization after download
+- **install.sh** → Handles initialization after download
 
 ---
 
@@ -342,7 +369,7 @@ The AI OS is a workspace template (writable context/, memory/, data/). Plugins a
 ### First Run
 
 1. User downloads the folder (git clone or ZIP)
-2. Runs `./setup.sh` → creates directories, copies templates
+2. Runs `./install.sh` → creates directories, copies templates
 3. Runs `claude` → CLAUDE.md loads as system prompt
 4. CLAUDE.md detects `context/my-business.md` is a placeholder
 5. Triggers `iris-setup` skill automatically
@@ -375,7 +402,7 @@ The AI OS is a workspace template (writable context/, memory/, data/). Plugins a
 ## How to Test in a New Environment
 
 1. Copy the entire `aios/` folder to a new location
-2. `cd aios && chmod +x setup.sh && ./setup.sh`
+2. `cd aios && chmod +x install.sh && ./install.sh`
 3. `claude`
 4. Say: "Set up my business" → walk through the wizard
 5. Test each skill:
@@ -423,7 +450,7 @@ Edit `.claude/settings.local.json` — see docs/MCP-SERVERS.md for configs.
 
 ### Upgrade Memory
 
-Follow docs/MEMORY-UPGRADE.md to add mem0 + Pinecone (Tier 3).
+Follow docs/MEMORY-UPGRADE.md to add mem0 + Upstash Vector (Tier 3).
 
 ### Add Hooks
 
@@ -441,7 +468,7 @@ Edit `.claude/settings.local.json` to add hooks for new lifecycle events. See th
 | **Claude's auto-memory** | Simple persistence | Dedup, semantic search, tiered architecture |
 | **Raw Claude Code** | Everything above as primitives | Structure, workflows, business context |
 
-**This system** = structured workspace + separation of concerns + 18 skills + 3 agents + 3-tier memory + hooks + setup wizard + zero-config starter + documented upgrade paths. Built over 6+ months of production use.
+**This system** = structured workspace + separation of concerns + 25 skills + 3 agents + 3-tier memory + hooks + setup wizard + zero-config starter + documented upgrade paths. Built over 6+ months of production use.
 
 ---
 
@@ -453,6 +480,6 @@ Edit `.claude/settings.local.json` to add hooks for new lifecycle events. See th
 | Core skills (7 starter) | $0 additional |
 | Power skills (API keys) | Varies by usage |
 | mem0 memory (optional) | ~$0.04/month |
-| Pinecone storage | Free (100K vectors) |
+| Upstash Vector storage | Free (10K queries/day) |
 | Lead research pipeline | ~$0.40/lead |
 | **Minimum viable AI OS** | **$20/month** (Claude Pro) |
