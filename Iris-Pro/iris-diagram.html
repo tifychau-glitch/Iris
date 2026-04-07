@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1600">
+<title>IRIS — System Architecture</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #05050e;
+  width: 1600px;
+  height: 900px;
+  overflow: hidden;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  padding: 3px 9px;
+  border-radius: 5px;
+}
+.tag-free { background: #0d2d4a; color: #4a9ed9; }
+.tag-pro  { background: #2d1460; color: #a07ae8; }
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+}
+.item-icon { font-size: 20px; flex-shrink: 0; }
+.item-title { font-size: 11px; font-weight: 600; color: #ddd; line-height: 1.3; }
+.item-sub   { font-size: 9px;  color: #555;        line-height: 1.4; }
+
+.col-label {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #4a3880;
+  margin-bottom: 10px;
+}
+
+.tier-pill {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: #5a3aaa;
+  background: rgba(100,60,200,0.15);
+  margin-bottom: 4px;
+  display: inline-block;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ SVG ARROWS LAYER ═══════════════ -->
+<svg style="position:absolute;top:0;left:0;width:1600px;height:900px;pointer-events:none;z-index:5" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="aw" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <polygon points="0 0,7 2.5,0 5" fill="rgba(255,255,255,0.28)"/>
+    </marker>
+    <marker id="ab" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <polygon points="0 0,7 2.5,0 5" fill="#3a85c8"/>
+    </marker>
+    <marker id="ap" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <polygon points="0 0,7 2.5,0 5" fill="#8a5ce0"/>
+    </marker>
+    <marker id="ag" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <polygon points="0 0,7 2.5,0 5" fill="#f59e0b"/>
+    </marker>
+    <marker id="at" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <polygon points="0 0,7 2.5,0 5" fill="#2dd4bf"/>
+    </marker>
+  </defs>
+
+  <!-- User → Telegram -->
+  <path d="M 745 88 C 660 115 310 115 212 142" stroke="rgba(255,255,255,0.22)" stroke-width="1.5" fill="none" stroke-dasharray="5,4" marker-end="url(#aw)"/>
+
+  <!-- User → Claude CLI -->
+  <path d="M 855 88 C 940 115 1280 115 1388 142" stroke="rgba(255,255,255,0.22)" stroke-width="1.5" fill="none" stroke-dasharray="5,4" marker-end="url(#aw)"/>
+
+  <!-- Telegram → VPS -->
+  <path d="M 212 230 L 212 292" stroke="#3a85c8" stroke-width="2" fill="none" marker-end="url(#ab)"/>
+
+  <!-- Claude CLI → Iris Pro (enters top-right area) -->
+  <path d="M 1388 230 L 1388 265" stroke="#8a5ce0" stroke-width="2" fill="none" marker-end="url(#ap)"/>
+
+  <!-- VPS right → Iris Pro left (upgrade) -->
+  <path d="M 442 470 L 498 470" stroke="#f59e0b" stroke-width="2.5" fill="none" marker-end="url(#ag)"/>
+
+  <!-- VPS → Cloud -->
+  <path d="M 222 665 L 222 752" stroke="#3a85c8" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ab)"/>
+
+  <!-- Iris Pro → Cloud -->
+  <path d="M 1029 665 L 1029 752" stroke="#8a5ce0" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ap)"/>
+
+  <!-- Upgrade path label -->
+  <text x="470" y="461" fill="#f59e0b" font-size="9" text-anchor="middle" font-family="-apple-system,sans-serif" font-weight="600" letter-spacing="0.5" opacity="0.9">upgrade →</text>
+
+  <!-- Zone labels (background regions) -->
+  <text x="222" y="278" fill="#1e5a92" font-size="9" text-anchor="middle" font-family="-apple-system,sans-serif" font-weight="700" letter-spacing="1" text-transform="uppercase" opacity="0.7">FREE TIER</text>
+  <text x="1029" y="254" fill="#5a3aaa" font-size="9" text-anchor="middle" font-family="-apple-system,sans-serif" font-weight="700" letter-spacing="1" opacity="0.7">PRO TIER</text>
+
+  <!-- Section divider between VPS and Iris Pro -->
+  <line x1="442" y1="295" x2="442" y2="660" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="3,5"/>
+</svg>
+
+
+<!-- ═══════════════ USER BOX ═══════════════ -->
+<div style="position:absolute; left:624px; top:22px; width:352px; height:68px;
+  background:#fff; border-radius:20px;
+  display:flex; align-items:center; justify-content:center; gap:14px; z-index:10;
+  box-shadow: 0 0 40px rgba(255,255,255,0.06)">
+  <span style="font-size:30px">👤</span>
+  <div>
+    <div style="font-size:17px; font-weight:700; color:#111; letter-spacing:-0.3px">User</div>
+    <div style="font-size:10px; color:#999">entrepreneur · operator</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ TELEGRAM ACCESS ═══════════════ -->
+<div style="position:absolute; left:108px; top:142px; width:208px; height:88px;
+  background:#0a1e36; border:1.5px solid #1e4f80; border-radius:14px;
+  display:flex; align-items:center; justify-content:center; gap:12px; z-index:10">
+  <span style="font-size:28px">✈️</span>
+  <div>
+    <div style="font-size:13px; font-weight:600; color:#6db8f5">Telegram</div>
+    <div style="font-size:10px; color:#3a6a9a">mobile app</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ CLAUDE CODE CLI ═══════════════ -->
+<div style="position:absolute; left:1284px; top:142px; width:208px; height:88px;
+  background:#180c38; border:1.5px solid #5a3abf; border-radius:14px;
+  display:flex; align-items:center; justify-content:center; gap:12px; z-index:10">
+  <span style="font-size:28px">🖥️</span>
+  <div>
+    <div style="font-size:13px; font-weight:600; color:#a880f0">Claude Code</div>
+    <div style="font-size:10px; color:#6040a0">CLI · local terminal</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ VPS / IRIS CORE ═══════════════ -->
+<div style="position:absolute; left:40px; top:292px; width:400px; height:374px;
+  background:rgba(8,18,40,0.92); border:1.5px solid #1a5090; border-radius:20px;
+  padding:18px 20px; z-index:10">
+
+  <div style="display:flex; align-items:center; gap:10px; margin-bottom:3px">
+    <span style="font-size:16px; font-weight:700; color:#6db8f5; letter-spacing:-0.3px">Iris Core</span>
+    <span class="tag tag-free">Free Tier</span>
+  </div>
+  <div style="font-size:10px; color:#2a5a80; margin-bottom:16px; letter-spacing:0.2px">VPS · Hostinger · always on</div>
+
+  <div style="display:flex; flex-direction:column; gap:8px">
+    <div class="item">
+      <span class="item-icon">🤖</span>
+      <div><div class="item-title">Telegram Bot</div><div class="item-sub">polls Telegram API · runs sessions</div></div>
+    </div>
+    <div class="item">
+      <span class="item-icon">🌐</span>
+      <div><div class="item-title">Web Signup Form</div><div class="item-sub">Flask · captures email · onboards users</div></div>
+    </div>
+    <div class="item">
+      <span class="item-icon">🗄️</span>
+      <div><div class="item-title">User Database</div><div class="item-sub">SQLite · sessions + conversation history</div></div>
+    </div>
+    <div class="item">
+      <span class="item-icon">📧</span>
+      <div><div class="item-title">Email Summary</div><div class="item-sub">Gmail SMTP · sends session recap</div></div>
+    </div>
+    <div class="item">
+      <span class="item-icon">🧠</span>
+      <div><div class="item-title">Claude API</div><div class="item-sub">Anthropic · powers conversations</div></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ IRIS PRO / LOCAL MAC ═══════════════ -->
+<div style="position:absolute; left:498px; top:265px; width:1062px; height:400px;
+  background:rgba(14,6,34,0.94); border:1.5px solid #5a32b8; border-radius:20px;
+  padding:18px 22px; z-index:10">
+
+  <div style="display:flex; align-items:center; gap:10px; margin-bottom:3px">
+    <span style="font-size:16px; font-weight:700; color:#a880f0; letter-spacing:-0.3px">Iris Pro</span>
+    <span class="tag tag-pro">Pro</span>
+  </div>
+  <div style="font-size:10px; color:#3a2270; margin-bottom:14px">Local Mac · Claude Code harness · personalized AI OS</div>
+
+  <!-- 4-column inner grid -->
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; height:318px;">
+
+    <!-- COL 1: Kernel -->
+    <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px 12px; display:flex; flex-direction:column; gap:8px;">
+      <div class="col-label">⬡ Kernel</div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">📋</span>
+        <div><div class="item-title">CLAUDE.md</div><div class="item-sub">system instructions</div></div>
+      </div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">📐</span>
+        <div><div class="item-title">Rules</div><div class="item-sub">safety guardrails</div></div>
+      </div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">🪝</span>
+        <div><div class="item-title">Hooks</div><div class="item-sub">stop · pre · post</div></div>
+      </div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">📁</span>
+        <div><div class="item-title">Context Files</div><div class="item-sub">voice · business · ICP</div></div>
+      </div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">⚙️</span>
+        <div><div class="item-title">Args / Config</div><div class="item-sub">YAML · model routing</div></div>
+      </div>
+    </div>
+
+    <!-- COL 2: Programs -->
+    <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px 12px; display:flex; flex-direction:column; gap:8px;">
+      <div class="col-label">⬡ Programs</div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">🎯</span>
+        <div><div class="item-title">25 Skills</div><div class="item-sub">workflow packages</div></div>
+      </div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">🤖</span>
+        <div><div class="item-title">3 Agents</div><div class="item-sub">researcher · writer · reviewer</div></div>
+      </div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">🐍</span>
+        <div><div class="item-title">Python Scripts</div><div class="item-sub">deterministic execution</div></div>
+      </div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">🔌</span>
+        <div><div class="item-title">7 MCP Servers</div><div class="item-sub">Gmail · GCal · Slack · Canva</div></div>
+      </div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">🗄️</span>
+        <div><div class="item-title">3 SQLite DBs</div><div class="item-sub">tasks · projects · activity</div></div>
+      </div>
+    </div>
+
+    <!-- COL 3: Memory -->
+    <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px 12px; display:flex; flex-direction:column; gap:8px;">
+      <div class="col-label">⬡ Memory</div>
+
+      <div style="background:rgba(100,60,200,0.08); border:1px solid rgba(100,60,200,0.18); border-radius:10px; padding:10px 12px;">
+        <div class="tier-pill">Tier 1</div>
+        <div style="display:flex; align-items:center; gap:8px">
+          <span style="font-size:17px">📄</span>
+          <div><div class="item-title">MEMORY.md</div><div class="item-sub">always loaded · curated facts</div></div>
+        </div>
+      </div>
+
+      <div style="background:rgba(100,60,200,0.08); border:1px solid rgba(100,60,200,0.18); border-radius:10px; padding:10px 12px;">
+        <div class="tier-pill">Tier 2</div>
+        <div style="display:flex; align-items:center; gap:8px">
+          <span style="font-size:17px">📝</span>
+          <div><div class="item-title">Daily Logs</div><div class="item-sub">session history · continuity</div></div>
+        </div>
+      </div>
+
+      <div style="background:rgba(100,60,200,0.08); border:1px solid rgba(100,60,200,0.18); border-radius:10px; padding:10px 12px;">
+        <div class="tier-pill">Tier 3</div>
+        <div style="display:flex; align-items:center; gap:8px">
+          <span style="font-size:17px">🔮</span>
+          <div><div class="item-title">Upstash Vector</div><div class="item-sub">semantic search · cloud</div></div>
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); border-radius:10px; padding:8px 12px; text-align:center; margin-top:2px">
+        <div style="font-size:9px; color:#3a2270; line-height:1.5">auto-captures each session<br>persists across conversations</div>
+      </div>
+    </div>
+
+    <!-- COL 4: Dashboard -->
+    <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:14px 12px; display:flex; flex-direction:column; gap:8px;">
+      <div class="col-label">⬡ Dashboard</div>
+
+      <div style="background:rgba(180,130,255,0.07); border:1px solid rgba(180,130,255,0.15); border-radius:10px; padding:10px 12px; text-align:center">
+        <div style="font-size:15px; font-weight:700; color:#c8a0ff; font-family:'SF Mono','Fira Code',monospace; letter-spacing:-0.3px">localhost:5050</div>
+        <div style="font-size:9px; color:#4a2890; margin-top:2px">accessed via web browser</div>
+      </div>
+
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">🔗</span>
+        <div><div class="item-title">Connectors</div><div class="item-sub">API key management · test & save</div></div>
+      </div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">📊</span>
+        <div><div class="item-title">Projects</div><div class="item-sub">status tracking · activity log</div></div>
+      </div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">📱</span>
+        <div><div class="item-title">Telegram Bot</div><div class="item-sub">reach user outside this window</div></div>
+      </div>
+      <div class="item" style="padding:8px 10px">
+        <span class="item-icon" style="font-size:17px">⚙️</span>
+        <div><div class="item-title">Settings</div><div class="item-sub">integrations · preferences</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════ CLOUD SERVICES LAYER ═══════════════ -->
+<div style="position:absolute; left:40px; top:752px; width:1520px; height:126px;
+  background:rgba(5,16,22,0.96); border:1.5px solid #1a5060; border-radius:16px;
+  display:flex; align-items:center; justify-content:space-around; padding:0 32px;
+  z-index:10">
+
+  <!-- Section label -->
+  <div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+    background:#05050e; padding:0 12px">
+    <span style="font-size:9px; color:#1a5060; font-weight:700; letter-spacing:1.5px; text-transform:uppercase">Cloud APIs &amp; Services</span>
+  </div>
+
+  <div style="text-align:center">
+    <div style="font-size:26px; margin-bottom:4px">🧠</div>
+    <div style="font-size:11px; font-weight:600; color:#67c8e4">Anthropic</div>
+    <div style="font-size:9px; color:#1a5060">Claude API · AI reasoning</div>
+  </div>
+
+  <div style="width:1px; height:60px; background:rgba(255,255,255,0.05)"></div>
+
+  <div style="text-align:center">
+    <div style="font-size:26px; margin-bottom:4px">✈️</div>
+    <div style="font-size:11px; font-weight:600; color:#67c8e4">Telegram</div>
+    <div style="font-size:9px; color:#1a5060">Bot API · messaging</div>
+  </div>
+
+  <div style="width:1px; height:60px; background:rgba(255,255,255,0.05)"></div>
+
+  <div style="text-align:center">
+    <div style="font-size:26px; margin-bottom:4px">📧</div>
+    <div style="font-size:11px; font-weight:600; color:#67c8e4">Gmail</div>
+    <div style="font-size:9px; color:#1a5060">SMTP + MCP · email</div>
+  </div>
+
+  <div style="width:1px; height:60px; background:rgba(255,255,255,0.05)"></div>
+
+  <div style="text-align:center">
+    <div style="font-size:26px; margin-bottom:4px">📅</div>
+    <div style="font-size:11px; font-weight:600; color:#67c8e4">Google Calendar</div>
+    <div style="font-size:9px; color:#1a5060">MCP connector</div>
+  </div>
+
+  <div style="width:1px; height:60px; background:rgba(255,255,255,0.05)"></div>
+
+  <div style="text-align:center">
+    <div style="font-size:26px; margin-bottom:4px">💬</div>
+    <div style="font-size:11px; font-weight:600; color:#67c8e4">Slack</div>
+    <div style="font-size:9px; color:#1a5060">MCP connector</div>
+  </div>
+
+  <div style="width:1px; height:60px; background:rgba(255,255,255,0.05)"></div>
+
+  <div style="text-align:center">
+    <div style="font-size:26px; margin-bottom:4px">🔮</div>
+    <div style="font-size:11px; font-weight:600; color:#67c8e4">Upstash Vector</div>
+    <div style="font-size:9px; color:#1a5060">long-term memory</div>
+  </div>
+
+  <div style="width:1px; height:60px; background:rgba(255,255,255,0.05)"></div>
+
+  <div style="text-align:center">
+    <div style="font-size:26px; margin-bottom:4px">🤖</div>
+    <div style="font-size:11px; font-weight:600; color:#67c8e4">OpenAI</div>
+    <div style="font-size:9px; color:#1a5060">embeddings · mem0</div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════ TITLE (top right) ═══════════════ -->
+<div style="position:absolute; right:44px; top:26px; text-align:right; z-index:10">
+  <div style="font-size:22px; font-weight:800; color:#fff; letter-spacing:-0.8px; line-height:1">IRIS</div>
+  <div style="font-size:9px; color:#2a2a44; letter-spacing:2px; text-transform:uppercase; margin-top:2px">System Architecture</div>
+</div>
+
+<!-- ═══════════════ LEGEND (bottom right) ═══════════════ -->
+<div style="position:absolute; right:44px; bottom:26px; display:flex; gap:20px; z-index:10; align-items:center">
+  <div style="display:flex; align-items:center; gap:6px">
+    <svg width="28" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" stroke-dasharray="4,3"/><polygon points="22,2 28,5 22,8" fill="rgba(255,255,255,0.25)"/></svg>
+    <span style="font-size:9px; color:#2a2a44">user request</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:6px">
+    <svg width="28" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="#3a85c8" stroke-width="1.5"/><polygon points="22,2 28,5 22,8" fill="#3a85c8"/></svg>
+    <span style="font-size:9px; color:#2a2a44">free tier</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:6px">
+    <svg width="28" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="#8a5ce0" stroke-width="1.5"/><polygon points="22,2 28,5 22,8" fill="#8a5ce0"/></svg>
+    <span style="font-size:9px; color:#2a2a44">pro tier</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:6px">
+    <svg width="28" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="#f59e0b" stroke-width="2"/><polygon points="22,2 28,5 22,8" fill="#f59e0b"/></svg>
+    <span style="font-size:9px; color:#2a2a44">upgrade path</span>
+  </div>
+</div>
+
+</body>
+</html>

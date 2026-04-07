@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>IRIS System Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0f;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 40px;
+    min-width: 1360px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 36px;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 32px;
+    font-size: 12px;
+    color: #888;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .dot {
+    width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0;
+  }
+  .dot-green { background: #34d399; box-shadow: 0 0 6px #34d39966; }
+  .dot-yellow { background: #fbbf24; box-shadow: 0 0 6px #fbbf2466; }
+  .dot-gray { background: #555; }
+
+  /* Main grid */
+  .architecture {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: auto auto;
+    gap: 24px;
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+
+  /* Zone containers */
+  .zone {
+    border: 1px solid #1e1e2e;
+    border-radius: 14px;
+    padding: 24px;
+    background: #111118;
+    position: relative;
+  }
+  .zone-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #666;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .zone-label .icon { font-size: 14px; }
+  .zone-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 20px;
+  }
+
+  /* Local machine zone spans full width top */
+  .zone-local {
+    grid-column: 1 / -1;
+    border-color: #2a2a4a;
+    background: linear-gradient(135deg, #111118 0%, #13131f 100%);
+  }
+
+  /* VPS zone */
+  .zone-vps {
+    border-color: #2a3a2a;
+    background: linear-gradient(135deg, #111118 0%, #121a14 100%);
+  }
+
+  /* External zone */
+  .zone-external {
+    border-color: #2a2a2a;
+  }
+
+  /* Inner layout for local machine */
+  .local-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 320px;
+    gap: 16px;
+  }
+
+  /* Cards */
+  .card {
+    background: #1a1a26;
+    border: 1px solid #252535;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .card-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .card-desc {
+    font-size: 11px;
+    color: #666;
+  }
+
+  /* Item lists */
+  .items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .items li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #aaa;
+    padding: 5px 8px;
+    background: #13131f;
+    border-radius: 6px;
+    border: 1px solid #1e1e2e;
+  }
+  .items li .label { flex: 1; }
+  .items li .meta {
+    font-size: 10px;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  /* Skill grid */
+  .skill-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .skill-chip {
+    font-size: 10px;
+    color: #888;
+    background: #13131f;
+    border: 1px solid #1e1e2e;
+    border-radius: 4px;
+    padding: 3px 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Color accents */
+  .accent-purple { background: #2d1f5e; }
+  .accent-blue { background: #1a2a4a; }
+  .accent-green { background: #1a3a2a; }
+  .accent-orange { background: #3a2a1a; }
+  .accent-pink { background: #3a1a2a; }
+  .accent-teal { background: #1a3a3a; }
+
+  /* Connection lines section */
+  .connections {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    padding: 12px 0;
+  }
+  .conn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #666;
+    background: #111118;
+    border: 1px solid #1e1e2e;
+    border-radius: 20px;
+    padding: 6px 14px;
+  }
+  .conn .arrow { color: #444; font-size: 13px; }
+  .conn .node { color: #aaa; }
+  .conn .via { color: #555; font-style: italic; }
+
+  /* VPS inner */
+  .vps-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .vps-item {
+    background: #13131f;
+    border: 1px solid #1e1e2e;
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .vps-item-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #ccc;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .vps-item-desc {
+    font-size: 10px;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  /* External services */
+  .ext-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .ext-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #13131f;
+    border: 1px solid #1e1e2e;
+    border-radius: 6px;
+  }
+  .ext-name {
+    font-size: 12px;
+    color: #aaa;
+    flex: 1;
+  }
+  .ext-use {
+    font-size: 10px;
+    color: #555;
+  }
+
+  /* User flow section */
+  .user-flows {
+    grid-column: 1 / -1;
+    border: 1px solid #1e1e2e;
+    border-radius: 14px;
+    padding: 20px 24px;
+    background: #0d0d14;
+  }
+  .flow-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #555;
+    margin-bottom: 16px;
+  }
+  .flows {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .flow {
+    border: 1px solid #1e1e2e;
+    border-radius: 10px;
+    padding: 16px;
+    background: #111118;
+  }
+  .flow-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .flow-desc {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 12px;
+  }
+  .flow-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    font-size: 10px;
+    color: #aaa;
+    background: #1a1a26;
+    border: 1px solid #252535;
+    border-radius: 4px;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+  .flow-arrow {
+    color: #333;
+    font-size: 12px;
+    padding: 0 4px;
+  }
+
+  /* Stats bar */
+  .stats {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: #111118;
+    border: 1px solid #1e1e2e;
+    border-radius: 10px;
+    padding: 16px 24px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .stat-num {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  /* Dashboard card special */
+  .dashboard-card {
+    grid-row: span 2;
+  }
+  .dash-routes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .dash-route {
+    font-size: 10px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: #666;
+    padding: 3px 6px;
+    background: #13131f;
+    border-radius: 4px;
+    border: 1px solid #1e1e2e;
+  }
+
+  /* Upgrade path callout */
+  .upgrade-path {
+    grid-column: 1 / -1;
+    background: linear-gradient(90deg, #1a1a26 0%, #1f1a2e 50%, #1a1a26 100%);
+    border: 1px dashed #3a2a5a;
+    border-radius: 10px;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    justify-content: center;
+  }
+  .upgrade-path .step {
+    font-size: 12px;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .upgrade-path .arrow {
+    color: #555;
+    font-size: 16px;
+  }
+
+  /* Responsive */
+  @media print {
+    body { background: #fff; color: #333; }
+    .zone { border-color: #ddd; background: #f9f9f9; }
+    .card { background: #fff; border-color: #ddd; }
+  }
+</style>
+</head>
+<body>
+
+<h1>IRIS System Architecture</h1>
+<p class="subtitle">Current Build Status &mdash; April 2026</p>
+
+<div class="legend">
+  <div class="legend-item"><span class="dot dot-green"></span> Built &amp; Working</div>
+  <div class="legend-item"><span class="dot dot-yellow"></span> Built, Needs Config</div>
+  <div class="legend-item"><span class="dot dot-gray"></span> Optional / Not Connected</div>
+</div>
+
+<!-- Stats -->
+<div class="stats" style="max-width:1320px; margin: 0 auto 28px;">
+  <div class="stat"><div class="stat-num">38</div><div class="stat-label">Skills</div></div>
+  <div class="stat"><div class="stat-num">3</div><div class="stat-label">Memory Tiers</div></div>
+  <div class="stat"><div class="stat-num">3</div><div class="stat-label">Subagents</div></div>
+  <div class="stat"><div class="stat-num">7</div><div class="stat-label">MCP Connectors</div></div>
+  <div class="stat"><div class="stat-num">3</div><div class="stat-label">SQLite DBs</div></div>
+  <div class="stat"><div class="stat-num">2</div><div class="stat-label">Deploy Targets</div></div>
+</div>
+
+<div class="architecture">
+
+  <!-- ===================== LOCAL MACHINE ===================== -->
+  <div class="zone zone-local">
+    <div class="zone-label"><span class="icon">&#128187;</span> YOUR MAC &mdash; LOCAL MACHINE</div>
+    <div class="zone-title">IRIS Pro <span style="font-weight:400;font-size:13px;color:#666;">&nbsp;/ AI Operating System</span></div>
+
+    <div class="local-grid">
+
+      <!-- Column 1: Core System -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <!-- Kernel -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon accent-purple">&#9881;</div>
+            <div>
+              <div class="card-title">Kernel</div>
+              <div class="card-desc">CLAUDE.md + Rules + Hooks</div>
+            </div>
+            <span class="dot dot-green" style="margin-left:auto;"></span>
+          </div>
+          <ul class="items">
+            <li><span class="dot dot-green"></span><span class="label">CLAUDE.md</span><span class="meta">Personality &amp; system prompt</span></li>
+            <li><span class="dot dot-green"></span><span class="label">guardrails.md</span><span class="meta">Safety rules</span></li>
+            <li><span class="dot dot-green"></span><span class="label">memory-protocol.md</span><span class="meta">3-tier memory rules</span></li>
+            <li><span class="dot dot-green"></span><span class="label">dashboard-updates.md</span><span class="meta">Auto-log protocol</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Hooks</span><span class="meta">Stop (mem capture), Pre/Post tool</span></li>
+          </ul>
+        </div>
+
+        <!-- Memory -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon accent-teal">&#128024;</div>
+            <div>
+              <div class="card-title">Memory System</div>
+              <div class="card-desc">3-tier persistence</div>
+            </div>
+            <span class="dot dot-green" style="margin-left:auto;"></span>
+          </div>
+          <ul class="items">
+            <li><span class="dot dot-green"></span><span class="label">Tier 1: MEMORY.md</span><span class="meta">Always loaded</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Tier 2: Daily Logs</span><span class="meta">memory/logs/</span></li>
+            <li><span class="dot dot-yellow"></span><span class="label">Tier 3: Upstash Vector</span><span class="meta">mem0 + embeddings</span></li>
+          </ul>
+        </div>
+
+        <!-- Data -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon accent-orange">&#128451;</div>
+            <div>
+              <div class="card-title">Data Layer</div>
+              <div class="card-desc">SQLite databases</div>
+            </div>
+            <span class="dot dot-green" style="margin-left:auto;"></span>
+          </div>
+          <ul class="items">
+            <li><span class="dot dot-green"></span><span class="label">projects.db</span><span class="meta">Projects &amp; tasks</span></li>
+            <li><span class="dot dot-green"></span><span class="label">tasks.db</span><span class="meta">Task manager</span></li>
+            <li><span class="dot dot-green"></span><span class="label">iris_accountability.db</span><span class="meta">Commitments vs completions</span></li>
+          </ul>
+        </div>
+
+        <!-- Context -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon accent-blue">&#128214;</div>
+            <div>
+              <div class="card-title">Context</div>
+              <div class="card-desc">Domain knowledge</div>
+            </div>
+            <span class="dot dot-green" style="margin-left:auto;"></span>
+          </div>
+          <ul class="items">
+            <li><span class="dot dot-green"></span><span class="label">my-business.md</span><span class="meta">Business details</span></li>
+            <li><span class="dot dot-green"></span><span class="label">my-voice.md</span><span class="meta">Communication style</span></li>
+            <li><span class="dot dot-green"></span><span class="label">preferences.yaml</span><span class="meta">Args: timezone, models</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Column 2: Skills & Agents -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <!-- Skills -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon accent-pink">&#9889;</div>
+            <div>
+              <div class="card-title">Skills <span style="font-weight:400;color:#666;">(38)</span></div>
+              <div class="card-desc">Self-contained workflows</div>
+            </div>
+            <span class="dot dot-green" style="margin-left:auto;"></span>
+          </div>
+          <div style="font-size:10px;color:#555;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;">Starter (no API keys)</div>
+          <div class="skill-grid" style="margin-bottom:8px;">
+            <div class="skill-chip">iris-setup</div>
+            <div class="skill-chip">research</div>
+            <div class="skill-chip">content-writer</div>
+            <div class="skill-chip">meeting-prep</div>
+            <div class="skill-chip">email-assistant</div>
+            <div class="skill-chip">weekly-review</div>
+            <div class="skill-chip">task-manager</div>
+            <div class="skill-chip">skill-creator</div>
+          </div>
+          <div style="font-size:10px;color:#555;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;">Power (optional keys)</div>
+          <div class="skill-grid" style="margin-bottom:8px;">
+            <div class="skill-chip">memory</div>
+            <div class="skill-chip">telegram</div>
+            <div class="skill-chip">email-digest</div>
+            <div class="skill-chip">content-pipeline</div>
+            <div class="skill-chip">research-lead</div>
+            <div class="skill-chip">gamma-slides</div>
+            <div class="skill-chip">build-website</div>
+            <div class="skill-chip">build-app</div>
+            <div class="skill-chip">accountability</div>
+            <div class="skill-chip">plugin-builder</div>
+          </div>
+          <div style="font-size:10px;color:#555;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;">Extended</div>
+          <div class="skill-grid">
+            <div class="skill-chip">ai-news-monitor</div>
+            <div class="skill-chip">ai-seo</div>
+            <div class="skill-chip">competitor-analysis</div>
+            <div class="skill-chip">sales-closer</div>
+            <div class="skill-chip">proposal-generator</div>
+            <div class="skill-chip">offer-engine</div>
+            <div class="skill-chip">strategic-forecast</div>
+            <div class="skill-chip">priority-focus</div>
+            <div class="skill-chip">why-filter</div>
+            <div class="skill-chip">youtube-content</div>
+            <div class="skill-chip">call-digest</div>
+            <div class="skill-chip">build-frontend</div>
+            <div class="skill-chip">thumbnail-gen</div>
+            <div class="skill-chip">video-edit</div>
+            <div class="skill-chip">constraint-finder</div>
+            <div class="skill-chip">controlled-calendar</div>
+            <div class="skill-chip">mt-everest</div>
+            <div class="skill-chip">car-wash-eval</div>
+            <div class="skill-chip">augmentation-planner</div>
+            <div class="skill-chip">daily-brief</div>
+          </div>
+        </div>
+
+        <!-- Agents -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon accent-blue">&#129302;</div>
+            <div>
+              <div class="card-title">Subagents</div>
+              <div class="card-desc">Specialized workers</div>
+            </div>
+            <span class="dot dot-green" style="margin-left:auto;"></span>
+          </div>
+          <ul class="items">
+            <li><span class="dot dot-green"></span><span class="label">researcher</span><span class="meta">Sonnet &middot; read-only</span></li>
+            <li><span class="dot dot-green"></span><span class="label">content-writer</span><span class="meta">Sonnet &middot; write</span></li>
+            <li><span class="dot dot-green"></span><span class="label">code-reviewer</span><span class="meta">Opus &middot; read-only</span></li>
+          </ul>
+        </div>
+
+        <!-- AI Provider -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon accent-purple">&#129504;</div>
+            <div>
+              <div class="card-title">AI Provider</div>
+              <div class="card-desc">lib/ai_provider.py</div>
+            </div>
+            <span class="dot dot-green" style="margin-left:auto;"></span>
+          </div>
+          <ul class="items">
+            <li><span class="dot dot-green"></span><span class="label">Claude Code CLI</span><span class="meta">Default &middot; subscription</span></li>
+            <li><span class="dot dot-yellow"></span><span class="label">Anthropic API</span><span class="meta">Fallback &middot; needs key</span></li>
+          </ul>
+          <div style="margin-top:8px;font-size:10px;color:#555;">Model routing: Opus / Sonnet / Haiku per skill</div>
+        </div>
+      </div>
+
+      <!-- Column 3: Dashboard -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="card dashboard-card">
+          <div class="card-header">
+            <div class="card-icon accent-green">&#128202;</div>
+            <div>
+              <div class="card-title">Dashboard</div>
+              <div class="card-desc">Flask @ localhost:5050</div>
+            </div>
+            <span class="dot dot-green" style="margin-left:auto;"></span>
+          </div>
+
+          <!-- Dashboard visual -->
+          <div style="background:#0d0d14;border:1px solid #252535;border-radius:8px;padding:12px;margin-bottom:12px;">
+            <div style="display:flex;gap:4px;margin-bottom:8px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:#ff5f57;"></span>
+              <span style="width:8px;height:8px;border-radius:50%;background:#febc2e;"></span>
+              <span style="width:8px;height:8px;border-radius:50%;background:#28c840;"></span>
+            </div>
+            <div style="font-size:10px;color:#444;font-family:monospace;margin-bottom:8px;">localhost:5050</div>
+            <!-- Mini kanban -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
+              <div style="background:#1a1a26;border-radius:4px;padding:6px;">
+                <div style="font-size:8px;color:#555;text-transform:uppercase;margin-bottom:4px;">To Do</div>
+                <div style="background:#252535;border-radius:3px;height:12px;margin-bottom:2px;"></div>
+                <div style="background:#252535;border-radius:3px;height:12px;"></div>
+              </div>
+              <div style="background:#1a1a26;border-radius:4px;padding:6px;">
+                <div style="font-size:8px;color:#555;text-transform:uppercase;margin-bottom:4px;">In Progress</div>
+                <div style="background:#2d1f5e;border-radius:3px;height:12px;margin-bottom:2px;"></div>
+              </div>
+              <div style="background:#1a1a26;border-radius:4px;padding:6px;">
+                <div style="font-size:8px;color:#555;text-transform:uppercase;margin-bottom:4px;">Done</div>
+                <div style="background:#1a3a2a;border-radius:3px;height:12px;margin-bottom:2px;"></div>
+                <div style="background:#1a3a2a;border-radius:3px;height:12px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Pages</div>
+          <ul class="items" style="margin-bottom:10px;">
+            <li><span class="dot dot-green"></span><span class="label">Kanban Board</span><span class="meta">index.html</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Settings</span><span class="meta">Connectors &amp; keys</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Login / Setup</span><span class="meta">Password auth</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Connectors</span><span class="meta">connectors.yaml mgmt</span></li>
+          </ul>
+
+          <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">API Routes</div>
+          <div class="dash-routes">
+            <div class="dash-route">GET&nbsp;&nbsp;/api/projects</div>
+            <div class="dash-route">POST /api/projects</div>
+            <div class="dash-route">GET&nbsp;&nbsp;/api/connectors</div>
+            <div class="dash-route">POST /api/connectors/:name/test</div>
+            <div class="dash-route">GET&nbsp;&nbsp;/api/accountability</div>
+            <div class="dash-route">GET&nbsp;&nbsp;/api/status</div>
+          </div>
+        </div>
+
+        <!-- MCP Connectors -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon accent-teal">&#128268;</div>
+            <div>
+              <div class="card-title">MCP Connectors <span style="font-weight:400;color:#666;">(7)</span></div>
+              <div class="card-desc">Live integrations via MCP</div>
+            </div>
+            <span class="dot dot-green" style="margin-left:auto;"></span>
+          </div>
+          <ul class="items">
+            <li><span class="dot dot-green"></span><span class="label">Gmail</span><span class="meta">Read, search, draft</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Google Calendar</span><span class="meta">Events, scheduling</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Slack</span><span class="meta">Messages, canvases</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Canva</span><span class="meta">Design, export</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Browser (Chrome)</span><span class="meta">Web automation</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Dev Preview</span><span class="meta">Server preview</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Scheduled Tasks</span><span class="meta">Cron agents</span></li>
+          </ul>
+        </div>
+
+        <!-- Automation -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon accent-orange">&#9200;</div>
+            <div>
+              <div class="card-title">Automation</div>
+              <div class="card-desc">Scheduled execution</div>
+            </div>
+            <span class="dot dot-green" style="margin-left:auto;"></span>
+          </div>
+          <ul class="items">
+            <li><span class="dot dot-green"></span><span class="label">Scheduled Tasks MCP</span><span class="meta">Cron-like agents</span></li>
+            <li><span class="dot dot-yellow"></span><span class="label">launchctl / cron</span><span class="meta">Headless skills</span></li>
+            <li><span class="dot dot-green"></span><span class="label">Stop Hook</span><span class="meta">Auto memory capture</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CONNECTION FLOWS ===================== -->
+  <div class="connections">
+    <div class="conn"><span class="node">You</span> <span class="arrow">&#8594;</span> <span class="node">Claude Code CLI</span> <span class="arrow">&#8594;</span> <span class="node">IRIS Pro</span></div>
+    <div class="conn"><span class="node">You</span> <span class="arrow">&#8594;</span> <span class="node">Browser</span> <span class="arrow">&#8594;</span> <span class="node">Dashboard :5050</span></div>
+    <div class="conn"><span class="node">You</span> <span class="arrow">&#8594;</span> <span class="node">Telegram</span> <span class="arrow">&#8594;</span> <span class="node">IRIS Core (VPS)</span></div>
+    <div class="conn"><span class="node">IRIS Core</span> <span class="arrow">&#8594;</span> <span class="via">upgrade link</span> <span class="arrow">&#8594;</span> <span class="node">IRIS Pro</span></div>
+    <div class="conn"><span class="node">IRIS Pro</span> <span class="arrow">&#8596;</span> <span class="node">Upstash Vector</span> <span class="via">(memory)</span></div>
+    <div class="conn"><span class="node">IRIS Core</span> <span class="arrow">&#8594;</span> <span class="node">Gmail</span> <span class="arrow">&#8594;</span> <span class="node">User Inbox</span></div>
+    <div class="conn"><span class="node">IRIS Pro</span> <span class="arrow">&#8596;</span> <span class="node">Gmail</span> <span class="via">(MCP)</span></div>
+    <div class="conn"><span class="node">IRIS Pro</span> <span class="arrow">&#8596;</span> <span class="node">Google Calendar</span> <span class="via">(MCP)</span></div>
+    <div class="conn"><span class="node">IRIS Pro</span> <span class="arrow">&#8596;</span> <span class="node">Slack</span> <span class="via">(MCP)</span></div>
+    <div class="conn"><span class="node">IRIS Pro</span> <span class="arrow">&#8596;</span> <span class="node">Canva</span> <span class="via">(MCP)</span></div>
+  </div>
+
+  <!-- ===================== VPS ===================== -->
+  <div class="zone zone-vps">
+    <div class="zone-label"><span class="icon">&#9729;</span> HOSTINGER VPS &mdash; CLOUD SERVER</div>
+    <div class="zone-title">IRIS Core <span style="font-weight:400;font-size:13px;color:#666;">&nbsp;/ Free Entry Point</span></div>
+
+    <div class="vps-grid">
+      <div class="vps-item">
+        <div class="vps-item-title"><span class="dot dot-green"></span> Telegram Bot</div>
+        <div class="vps-item-desc">Polling mode via python-telegram-bot. Deeplink signup: t.me/IrisAccountabilityBot?start=token</div>
+      </div>
+      <div class="vps-item">
+        <div class="vps-item-title"><span class="dot dot-green"></span> Web Signup</div>
+        <div class="vps-item-desc">Flask @ :8080. Captures email, generates token, links to Telegram deeplink.</div>
+      </div>
+      <div class="vps-item">
+        <div class="vps-item-title"><span class="dot dot-green"></span> Mt. Everest Engine</div>
+        <div class="vps-item-desc">8-area excavation over 8-15 exchanges. Generates 6-part goal summary. ~$0.20/user.</div>
+      </div>
+      <div class="vps-item">
+        <div class="vps-item-title"><span class="dot dot-green"></span> Email Sender</div>
+        <div class="vps-item-desc">Gmail SMTP. Sends formatted summary after session. Dark theme HTML email.</div>
+      </div>
+      <div class="vps-item" style="grid-column: 1 / -1;">
+        <div class="vps-item-title"><span class="dot dot-green"></span> Database &mdash; iris_core.db</div>
+        <div class="vps-item-desc" style="display:flex;gap:16px;">
+          <span>&#8226; users (whitelist, rate limits)</span>
+          <span>&#8226; mt_everest_sessions (status, summaries)</span>
+          <span>&#8226; pending_signups (email &#8594; token)</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;padding:10px;background:#0d0d14;border-radius:6px;font-family:monospace;font-size:10px;color:#555;">
+      <span style="color:#666;">Deployed as:</span> systemd service &middot; <span style="color:#666;">Auto-restart:</span> on failure &middot; <span style="color:#666;">Rate limit:</span> 50 msg/user/day &middot; <span style="color:#666;">AI:</span> Claude Sonnet via API
+    </div>
+  </div>
+
+  <!-- ===================== EXTERNAL ===================== -->
+  <div class="zone zone-external">
+    <div class="zone-label"><span class="icon">&#127760;</span> EXTERNAL SERVICES</div>
+
+    <div class="ext-grid">
+      <div style="font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;padding:4px 0 2px;">MCP Connectors (Active)</div>
+      <div class="ext-item">
+        <span class="dot dot-green"></span>
+        <span class="ext-name">Gmail</span>
+        <span class="ext-use">MCP &middot; Read, draft</span>
+      </div>
+      <div class="ext-item">
+        <span class="dot dot-green"></span>
+        <span class="ext-name">Google Calendar</span>
+        <span class="ext-use">MCP &middot; Events</span>
+      </div>
+      <div class="ext-item">
+        <span class="dot dot-green"></span>
+        <span class="ext-name">Slack</span>
+        <span class="ext-use">MCP &middot; Messages</span>
+      </div>
+      <div class="ext-item">
+        <span class="dot dot-green"></span>
+        <span class="ext-name">Canva</span>
+        <span class="ext-use">MCP &middot; Design</span>
+      </div>
+      <div style="font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;padding:6px 0 2px;">API Services</div>
+      <div class="ext-item">
+        <span class="dot dot-green"></span>
+        <span class="ext-name">Telegram API</span>
+        <span class="ext-use">Bot messaging</span>
+      </div>
+      <div class="ext-item">
+        <span class="dot dot-green"></span>
+        <span class="ext-name">Anthropic API</span>
+        <span class="ext-use">Claude Sonnet (Core)</span>
+      </div>
+      <div class="ext-item">
+        <span class="dot dot-yellow"></span>
+        <span class="ext-name">Upstash Vector</span>
+        <span class="ext-use">Long-term memory</span>
+      </div>
+      <div class="ext-item">
+        <span class="dot dot-yellow"></span>
+        <span class="ext-name">OpenAI API</span>
+        <span class="ext-use">Embeddings (mem0)</span>
+      </div>
+      <div class="ext-item">
+        <span class="dot dot-yellow"></span>
+        <span class="ext-name">Gmail SMTP</span>
+        <span class="ext-use">Email delivery (Core)</span>
+      </div>
+      <div style="font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px;padding:6px 0 2px;">Optional</div>
+      <div class="ext-item">
+        <span class="dot dot-gray"></span>
+        <span class="ext-name">Gamma API</span>
+        <span class="ext-use">Slides</span>
+      </div>
+      <div class="ext-item">
+        <span class="dot dot-gray"></span>
+        <span class="ext-name">Perplexity</span>
+        <span class="ext-use">Research</span>
+      </div>
+      <div class="ext-item">
+        <span class="dot dot-gray"></span>
+        <span class="ext-name">Notion</span>
+        <span class="ext-use">Notes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== USER FLOWS ===================== -->
+  <div class="user-flows">
+    <div class="flow-title">&#9654; User Journey Flows</div>
+    <div class="flows">
+      <div class="flow">
+        <div class="flow-name">Free User (IRIS Core)</div>
+        <div class="flow-desc">One-time Mt. Everest goal excavation session</div>
+        <div class="flow-steps">
+          <span class="flow-step">Landing Page</span>
+          <span class="flow-arrow">&#8594;</span>
+          <span class="flow-step">Email Signup</span>
+          <span class="flow-arrow">&#8594;</span>
+          <span class="flow-step">Telegram Deeplink</span>
+          <span class="flow-arrow">&#8594;</span>
+          <span class="flow-step">Mt. Everest (8-15 msgs)</span>
+          <span class="flow-arrow">&#8594;</span>
+          <span class="flow-step">Summary Email</span>
+          <span class="flow-arrow">&#8594;</span>
+          <span class="flow-step" style="border-color:#3a2a5a;color:#c4b5fd;">Upgrade to Pro</span>
+        </div>
+      </div>
+      <div class="flow">
+        <div class="flow-name">Pro User (IRIS Pro)</div>
+        <div class="flow-desc">Ongoing AI accountability coaching + business OS</div>
+        <div class="flow-steps">
+          <span class="flow-step">Install</span>
+          <span class="flow-arrow">&#8594;</span>
+          <span class="flow-step">Setup Wizard</span>
+          <span class="flow-arrow">&#8594;</span>
+          <span class="flow-step">Connect APIs</span>
+          <span class="flow-arrow">&#8594;</span>
+          <span class="flow-step">Daily Use (CLI + Telegram)</span>
+          <span class="flow-arrow">&#8594;</span>
+          <span class="flow-step">Dashboard Tracking</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== UPGRADE PATH ===================== -->
+  <div class="upgrade-path">
+    <div class="step">&#127968; <strong>iris-ai.co</strong></div>
+    <span class="arrow">&#8594;</span>
+    <div class="step">&#128233; Email Capture</div>
+    <span class="arrow">&#8594;</span>
+    <div class="step">&#128172; Telegram Mt. Everest (free)</div>
+    <span class="arrow">&#8594;</span>
+    <div class="step">&#128231; Summary + Upgrade Link</div>
+    <span class="arrow">&#8594;</span>
+    <div class="step" style="color:#c4b5fd;">&#11088; IRIS Pro (paid)</div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1400">
+<title>IRIS System Map — Infrastructure Topology</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #08080d;
+    color: #d0d0d0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 40px 48px;
+    min-width: 1360px;
+  }
+  h1 { text-align:center; font-size:26px; font-weight:600; color:#fff; margin-bottom:4px; }
+  .sub { text-align:center; font-size:12px; color:#555; margin-bottom:32px; }
+
+  .conn-legend {
+    display: flex; gap: 20px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .cl-item { display:flex; align-items:center; gap:6px; font-size:11px; color:#666; }
+  .cl-line { width: 28px; height: 2px; border-radius: 1px; }
+
+  .topo {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 16px;
+    max-width: 1280px;
+    margin: 0 auto 32px;
+  }
+
+  .person {
+    grid-column: 1 / -1; display: flex; justify-content: center; padding: 8px 0 0;
+  }
+  .person-box {
+    text-align: center; padding: 16px 32px; background: #111118;
+    border: 1px solid #2a2a3a; border-radius: 12px;
+  }
+  .person-icon { font-size: 32px; margin-bottom: 4px; }
+  .person-label { font-size: 13px; font-weight:600; color:#fff; }
+  .person-sub { font-size: 10px; color:#555; }
+
+  .paths {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+  }
+  .path-card {
+    background: #0d0d14; border: 1px solid #1a1a24; border-radius: 10px;
+    padding: 12px 10px; text-align: center;
+  }
+  .path-icon { font-size: 18px; margin-bottom: 4px; }
+  .path-name { font-size: 11px; font-weight:600; color:#fff; margin-bottom: 2px; }
+  .path-desc { font-size: 9px; color:#555; margin-bottom: 6px; line-height:1.4; }
+  .path-arrow { font-size: 14px; color: #333; }
+  .path-target { font-size: 9px; margin-top: 4px; }
+
+  .env {
+    border: 1px solid #1e1e2e; border-radius: 14px; padding: 20px; background: #111118;
+  }
+  .env-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .env-icon { font-size: 20px; }
+  .env-title { font-size: 15px; font-weight:600; color:#fff; }
+  .env-badge { margin-left: auto; }
+
+  .props { list-style:none; display:flex; flex-direction:column; gap:5px; }
+  .props li {
+    display: flex; align-items: center; gap: 8px; font-size: 11px; color: #999;
+    padding: 5px 8px; background: #0d0d14; border-radius: 6px; border: 1px solid #1a1a24;
+  }
+  .props li .k { color: #666; min-width: 70px; font-size:10px; }
+  .props li .v { color: #bbb; flex:1; }
+
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  .g { background:#34d399; box-shadow:0 0 6px #34d39955; }
+  .y { background:#fbbf24; box-shadow:0 0 6px #fbbf2444; }
+  .r { background:#f87171; box-shadow:0 0 4px #f8717144; }
+  .gr { background:#555; }
+
+  .badge {
+    display: inline-block; font-size: 9px; padding: 2px 7px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+  }
+  .badge-local { background:#1a1a3a; color:#818cf8; }
+  .badge-vps { background:#1a3a1a; color:#6ee7b7; }
+  .badge-cloud { background:#1a2a3a; color:#7dd3fc; }
+
+  .b-purple { border-color: #3a2a6a; }
+  .b-green { border-color: #2a4a2a; }
+
+  .compare {
+    grid-column: 1 / -1; border: 1px solid #1e1e2e; border-radius: 14px;
+    overflow: hidden; background: #111118;
+  }
+  .compare table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .compare th {
+    background: #0d0d14; color: #888; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1px; padding: 10px 16px; text-align: left; border-bottom: 1px solid #1a1a24;
+  }
+  .compare td {
+    padding: 9px 16px; border-bottom: 1px solid #0f0f18; color: #aaa; vertical-align: top;
+  }
+  .compare tr:last-child td { border-bottom: none; }
+  .compare td:first-child { color:#666; font-weight:500; }
+  .col-pro { color: #c4b5fd !important; }
+  .col-core { color: #6ee7b7 !important; }
+
+  .flow-section {
+    grid-column: 1 / -1; border: 1px solid #1e1e2e; border-radius: 14px;
+    padding: 20px 24px; background: #0d0d14;
+  }
+  .flow-section-title {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #444; margin-bottom: 16px;
+  }
+  .flow-row { display: flex; align-items: center; gap: 0; margin-bottom: 10px; flex-wrap: wrap; }
+  .flow-row:last-child { margin-bottom: 0; }
+  .fn { font-size: 11px; padding: 6px 12px; border-radius: 6px; white-space: nowrap; }
+  .fn-user { background:#1a1a2e; color:#c4b5fd; border:1px solid #2a2a4a; }
+  .fn-local { background:#1a1a26; color:#e0e0e0; border:1px solid #252535; }
+  .fn-vps { background:#0f1f14; color:#6ee7b7; border:1px solid #1a3a2a; }
+  .fn-cloud { background:#0f1a2a; color:#7dd3fc; border:1px solid #1a2a4a; }
+  .fn-action { background:#1a1410; color:#fbbf24; border:1px solid #3a2a10; }
+  .fn-gap { background:#1a0f0f; color:#f87171; border:1px solid #3a1a1a; }
+  .fa { color: #333; font-size: 14px; padding: 0 6px; flex-shrink: 0; }
+  .flow-label { font-size: 10px; color: #444; margin-bottom: 6px; font-weight: 600; }
+
+  .insights {
+    grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+  }
+  .insight {
+    background: #111118; border: 1px solid #1e1e2e; border-radius: 10px; padding: 16px;
+  }
+  .insight-icon { font-size: 18px; margin-bottom: 6px; }
+  .insight-title { font-size: 12px; font-weight:600; color:#fff; margin-bottom: 4px; }
+  .insight-body { font-size: 11px; color: #777; line-height: 1.6; }
+  .insight-body strong { color: #aaa; font-weight: 500; }
+
+  .divider {
+    grid-column: 1 / -1; height: 1px;
+    background: linear-gradient(90deg, transparent 0%, #1e1e2e 20%, #1e1e2e 80%, transparent 100%);
+    margin: 8px 0;
+  }
+  .section-title {
+    grid-column: 1 / -1; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 2px; color: #444; padding-top: 8px;
+  }
+
+  /* Memory gap callout */
+  .gap-callout {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #1a0f0f 0%, #111118 100%);
+    border: 1px solid #3a1a1a;
+    border-radius: 12px;
+    padding: 18px 22px;
+  }
+  .gap-title {
+    font-size: 12px; font-weight:600; color:#f87171; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .gap-body { font-size: 11px; color: #888; line-height: 1.7; }
+  .gap-body strong { color: #ccc; }
+
+  /* Two-bot callout */
+  .bot-split {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0;
+    align-items: stretch;
+  }
+  .bot-card {
+    background: #111118;
+    border: 1px solid #1e1e2e;
+    border-radius: 12px;
+    padding: 16px 20px;
+  }
+  .bot-vs {
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 12px;
+    font-size: 11px; color: #333; font-weight: 700;
+  }
+  .bot-name { font-size: 13px; font-weight:600; color:#fff; margin-bottom: 2px; }
+  .bot-handle { font-size: 11px; color:#555; font-family: monospace; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<h1>IRIS System Map</h1>
+<p class="sub">Infrastructure Topology &amp; Data Flows &mdash; April 2026 &mdash; v2</p>
+
+<div class="conn-legend">
+  <div class="cl-item"><div class="cl-line" style="background:#818cf8;"></div> You &rarr; Local</div>
+  <div class="cl-item"><div class="cl-line" style="background:#6ee7b7;"></div> You &rarr; VPS</div>
+  <div class="cl-item"><div class="cl-line" style="background:#7dd3fc;"></div> System &rarr; Cloud API</div>
+  <div class="cl-item"><div class="cl-line" style="background:#f87171;"></div> Gap / Not Connected</div>
+  <div class="cl-item"><span class="badge badge-local">Local</span> Your Mac</div>
+  <div class="cl-item"><span class="badge badge-vps">VPS</span> Hostinger</div>
+  <div class="cl-item"><span class="badge badge-cloud">Cloud</span> External API</div>
+</div>
+
+<div class="topo">
+
+  <!-- ===== YOU ===== -->
+  <div class="person">
+    <div class="person-box">
+      <div class="person-icon">&#128100;</div>
+      <div class="person-label">You (or Your Customer)</div>
+      <div class="person-sub">Six ways to talk to IRIS</div>
+    </div>
+  </div>
+
+  <!-- ===== SIX ACCESS PATHS ===== -->
+  <div class="paths">
+    <div class="path-card" style="border-color:#2a2a5a;">
+      <div class="path-icon">&#9000;</div>
+      <div class="path-name">Terminal (CLI)</div>
+      <div class="path-desc"><code style="font-size:9px;color:#666;">claude</code> in project dir</div>
+      <div class="path-arrow">&#8595;</div>
+      <div class="path-target" style="color:#818cf8;">IRIS Pro</div>
+    </div>
+    <div class="path-card" style="border-color:#2a2a5a;">
+      <div class="path-icon">&#128421;</div>
+      <div class="path-name">Desktop App</div>
+      <div class="path-desc">Claude Code Mac/Win app</div>
+      <div class="path-arrow">&#8595;</div>
+      <div class="path-target" style="color:#818cf8;">IRIS Pro</div>
+    </div>
+    <div class="path-card" style="border-color:#2a2a5a;">
+      <div class="path-icon">&#127760;</div>
+      <div class="path-name">Web App</div>
+      <div class="path-desc">claude.ai/code in browser</div>
+      <div class="path-arrow">&#8595;</div>
+      <div class="path-target" style="color:#818cf8;">IRIS Pro</div>
+    </div>
+    <div class="path-card" style="border-color:#2a2a5a;">
+      <div class="path-icon">&#128187;</div>
+      <div class="path-name">IDE Extension</div>
+      <div class="path-desc">VS Code / JetBrains</div>
+      <div class="path-arrow">&#8595;</div>
+      <div class="path-target" style="color:#818cf8;">IRIS Pro</div>
+    </div>
+    <div class="path-card" style="border-color:#2a3a5a;">
+      <div class="path-icon">&#128202;</div>
+      <div class="path-name">Dashboard</div>
+      <div class="path-desc">localhost:5050 in browser</div>
+      <div class="path-arrow">&#8595;</div>
+      <div class="path-target" style="color:#818cf8;">IRIS Pro</div>
+    </div>
+    <div class="path-card" style="border-color:#1a4a3a;">
+      <div class="path-icon">&#128241;</div>
+      <div class="path-name">Telegram</div>
+      <div class="path-desc">Two separate bots</div>
+      <div class="path-arrow">&#8595;</div>
+      <div class="path-target"><span style="color:#818cf8;">Pro Bot</span> &nbsp;/&nbsp; <span style="color:#6ee7b7;">Core Bot</span></div>
+    </div>
+  </div>
+
+  <!-- Same engine note -->
+  <div style="grid-column:1/-1;text-align:center;padding:4px 0;">
+    <div style="display:inline-block;background:#0d0d14;border:1px solid #1a1a24;border-radius:8px;padding:8px 20px;font-size:10px;color:#666;">
+      &#9432;&nbsp; The first four (CLI, Desktop, Web, IDE) are all <strong style="color:#aaa;">Claude Code</strong> &mdash; same engine, same CLAUDE.md kernel, same skills, same memory. Different interface, identical IRIS.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">&#9670; Two Telegram Bots &mdash; Same IRIS, Different Scope</div>
+
+  <!-- ===== TWO BOTS ===== -->
+  <div class="bot-split">
+    <div class="bot-card" style="border-color:#2a4a2a;">
+      <div class="bot-name">IRIS Core Bot</div>
+      <div class="bot-handle">@IrisAccountabilityBot</div>
+      <ul class="props">
+        <li><span class="dot g"></span><span class="k">Token</span><span class="v">TELEGRAM_BOT_TOKEN (in Core .env)</span></li>
+        <li><span class="dot g"></span><span class="k">Runs on</span><span class="v">VPS &mdash; 24/7, always reachable</span></li>
+        <li><span class="dot g"></span><span class="k">Scope</span><span class="v">1 Mt. Everest session (free tier)</span></li>
+        <li><span class="dot g"></span><span class="k">After</span><span class="v">Summary email + upgrade link</span></li>
+        <li><span class="dot y"></span><span class="k">Return visits</span><span class="v">Re-show summary or redo excavation</span></li>
+        <li><span class="dot r"></span><span class="k">Memory</span><span class="v">In-memory only &mdash; resets on restart</span></li>
+      </ul>
+    </div>
+    <div class="bot-vs">vs</div>
+    <div class="bot-card" style="border-color:#3a2a6a;">
+      <div class="bot-name">IRIS Pro Bot</div>
+      <div class="bot-handle">@IrisProBot <span style="color:#444;">(create via BotFather)</span></div>
+      <ul class="props">
+        <li><span class="dot g"></span><span class="k">Token</span><span class="v">TELEGRAM_BOT_TOKEN (in Pro .env)</span></li>
+        <li><span class="dot y"></span><span class="k">Runs on</span><span class="v">User's Mac &mdash; only when handler is on</span></li>
+        <li><span class="dot g"></span><span class="k">Scope</span><span class="v">Full AIOS &mdash; all skills, memory, accountability</span></li>
+        <li><span class="dot g"></span><span class="k">Ongoing</span><span class="v">No session limit, persistent relationship</span></li>
+        <li><span class="dot g"></span><span class="k">Memory</span><span class="v">3-tier: MEMORY.md + logs + Upstash Vector</span></li>
+        <li><span class="dot g"></span><span class="k">Context</span><span class="v">Reads business profile, voice, preferences</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="grid-column:1/-1;text-align:center;padding:2px 0;">
+    <div style="display:inline-block;background:#0d0d14;border:1px solid #1a1a24;border-radius:8px;padding:8px 20px;font-size:10px;color:#666;">
+      Same IRIS personality. Same voice and tone. Two separate bot tokens, two separate handlers, two separate systems. The bot they message <em>is</em> the answer to "free or paid."
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">&#9670; Environments &mdash; Where Things Run</div>
+
+  <!-- ===== IRIS PRO (LOCAL) ===== -->
+  <div class="env b-purple" style="grid-column: 1 / 3;">
+    <div class="env-header">
+      <span class="env-icon">&#128187;</span>
+      <span class="env-title">IRIS Pro</span>
+      <span class="env-badge"><span class="badge badge-local">Local &middot; Your Mac</span></span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div>
+        <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Runtime Engine</div>
+        <ul class="props">
+          <li><span class="dot g"></span><span class="k">Engine</span><span class="v">Claude Code (CLI, Desktop, Web, IDE)</span></li>
+          <li><span class="dot g"></span><span class="k">Kernel</span><span class="v">CLAUDE.md &mdash; personality, rules, protocols</span></li>
+          <li><span class="dot g"></span><span class="k">Skills</span><span class="v">38 self-contained workflows</span></li>
+          <li><span class="dot g"></span><span class="k">Agents</span><span class="v">3 subagents: researcher, writer, reviewer</span></li>
+          <li><span class="dot g"></span><span class="k">MCP</span><span class="v">7 connectors: Gmail, GCal, Slack, Canva, Chrome, Preview, Tasks</span></li>
+          <li><span class="dot g"></span><span class="k">Hooks</span><span class="v">Stop (memory capture), Pre/Post tool (safety)</span></li>
+          <li><span class="dot g"></span><span class="k">AI Router</span><span class="v">lib/ai_provider.py &mdash; CLI or API fallback</span></li>
+        </ul>
+        <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.8px;margin:12px 0 8px;">Persistence (3-Tier Memory)</div>
+        <ul class="props">
+          <li><span class="dot g"></span><span class="k">Tier 1</span><span class="v">MEMORY.md &mdash; always loaded, curated facts</span></li>
+          <li><span class="dot g"></span><span class="k">Tier 2</span><span class="v">Daily logs &mdash; memory/logs/YYYY-MM-DD.md</span></li>
+          <li><span class="dot y"></span><span class="k">Tier 3</span><span class="v">Upstash Vector + mem0 (needs API keys)</span></li>
+          <li><span class="dot g"></span><span class="k">Data</span><span class="v">projects.db, tasks.db, accountability.db</span></li>
+          <li><span class="dot g"></span><span class="k">Context</span><span class="v">my-business.md, my-voice.md, preferences.yaml</span></li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Dashboard (Flask :5050)</div>
+        <ul class="props">
+          <li><span class="dot g"></span><span class="k">UI</span><span class="v">Kanban board &mdash; project &amp; task tracking</span></li>
+          <li><span class="dot g"></span><span class="k">Settings</span><span class="v">Connector config, API key management</span></li>
+          <li><span class="dot g"></span><span class="k">Auth</span><span class="v">Password login (SHA-256 + salt)</span></li>
+          <li><span class="dot g"></span><span class="k">API</span><span class="v">/api/projects, /api/connectors, /api/status</span></li>
+          <li><span class="dot g"></span><span class="k">DB</span><span class="v">Reads/writes projects.db directly</span></li>
+        </ul>
+        <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.8px;margin:12px 0 8px;">Automation</div>
+        <ul class="props">
+          <li><span class="dot g"></span><span class="k">Scheduled</span><span class="v">Scheduled Tasks MCP &mdash; cron-like agents</span></li>
+          <li><span class="dot y"></span><span class="k">Scheduler</span><span class="v">launchctl / cron &rarr; headless <code style="font-size:10px;">claude -p</code></span></li>
+          <li><span class="dot y"></span><span class="k">Telegram</span><span class="v">@IrisProBot daemon (local polling)</span></li>
+        </ul>
+        <div style="margin-top:14px;padding:10px 12px;background:#0d0d14;border:1px solid #1a1a24;border-radius:8px;">
+          <div style="font-size:9px;color:#444;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">How Claude Code &amp; Dashboard coexist</div>
+          <div style="font-size:11px;color:#777;line-height:1.6;">
+            Both read/write the <strong style="color:#aaa;">same SQLite databases</strong> and <strong style="color:#aaa;">same .env file</strong>. Claude Code does the thinking (AI). The dashboard does the viewing (UI). They share state through disk &mdash; no direct communication between them.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== IRIS CORE (VPS) ===== -->
+  <div class="env b-green">
+    <div class="env-header">
+      <span class="env-icon">&#9729;</span>
+      <span class="env-title">IRIS Core</span>
+      <span class="env-badge"><span class="badge badge-vps">VPS &middot; Hostinger</span></span>
+    </div>
+    <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Always-On Service</div>
+    <ul class="props">
+      <li><span class="dot g"></span><span class="k">Process</span><span class="v">systemd &middot; auto-restart</span></li>
+      <li><span class="dot g"></span><span class="k">Bot</span><span class="v">@IrisAccountabilityBot (polling)</span></li>
+      <li><span class="dot g"></span><span class="k">Signup</span><span class="v">Flask :8080 web form</span></li>
+      <li><span class="dot g"></span><span class="k">Engine</span><span class="v">Mt. Everest (8-15 msgs)</span></li>
+      <li><span class="dot g"></span><span class="k">AI</span><span class="v">Anthropic API (Sonnet)</span></li>
+      <li><span class="dot g"></span><span class="k">DB</span><span class="v">iris_core.db (users, sessions)</span></li>
+      <li><span class="dot y"></span><span class="k">Email</span><span class="v">Gmail SMTP &rarr; summary</span></li>
+    </ul>
+    <div style="margin-top:14px;padding:10px 12px;background:#0d0d14;border:1px solid #1a1a24;border-radius:8px;">
+      <div style="font-size:9px;color:#444;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Key difference from Pro</div>
+      <div style="font-size:11px;color:#777;line-height:1.6;">
+        Core runs <strong style="color:#6ee7b7;">24/7 on the VPS</strong>. Calls <strong style="color:#6ee7b7;">Anthropic API directly</strong> (no Claude Code CLI). Own database, own bot. <strong style="color:#f87171;">No shared state with Pro.</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">&#9670; Memory &mdash; What Each System Remembers</div>
+
+  <!-- ===== MEMORY COMPARISON ===== -->
+  <div class="compare">
+    <table>
+      <tr>
+        <th style="width:140px;">Memory Layer</th>
+        <th>IRIS Pro <span class="badge badge-local" style="margin-left:6px;">Local</span></th>
+        <th>IRIS Core <span class="badge badge-vps" style="margin-left:6px;">VPS</span></th>
+      </tr>
+      <tr>
+        <td>Conversation history</td>
+        <td class="col-pro">&#9989; Full context per session. Hooks auto-extract facts at session end.</td>
+        <td class="col-core">&#9888; In-memory Python dict. <strong style="color:#f87171;">Lost on bot restart.</strong></td>
+      </tr>
+      <tr>
+        <td>Session summaries</td>
+        <td class="col-pro">&#9989; Stored in memory/ + daily logs</td>
+        <td class="col-core">&#9989; Mt. Everest summary saved to SQLite. Survives restarts.</td>
+      </tr>
+      <tr>
+        <td>Long-term memory</td>
+        <td class="col-pro">&#9989; 3-tier: MEMORY.md + daily logs + Upstash Vector (semantic search)</td>
+        <td class="col-core">&#10060; None. No vector store, no daily logs, no MEMORY.md.</td>
+      </tr>
+      <tr>
+        <td>Cross-session recall</td>
+        <td class="col-pro">&#9989; IRIS remembers past conversations, preferences, patterns</td>
+        <td class="col-core">&#9888; Can retrieve saved summary only. No conversational memory.</td>
+      </tr>
+      <tr>
+        <td>Telegram memory</td>
+        <td class="col-pro">&#9989; Pro bot handler feeds into mem0 + Upstash Vector</td>
+        <td class="col-core">&#9888; Last 20 messages in-memory. Lost on restart.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ===== MEMORY GAP ===== -->
+  <div class="gap-callout">
+    <div class="gap-title">&#9888; Known Gap: No Memory Bridge Between Core &rarr; Pro</div>
+    <div class="gap-body">
+      When a free user upgrades from Core to Pro, <strong>Pro has zero knowledge of the Core conversation.</strong>
+      The Mt. Everest summary sits in <code style="font-size:10px;">iris_core.db</code> on the VPS &mdash; Pro never reads it.
+      The user would need to re-share their goal with Pro, or we'd need to build a handoff mechanism
+      (e.g., include the summary in the upgrade email so the user can paste it into their first Pro session).
+      <br><br>
+      <strong>This is a product decision, not a bug.</strong> The systems are intentionally separate for simplicity and security.
+      Bridging them later is straightforward but not built yet.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">&#9670; Side-by-Side Comparison</div>
+
+  <!-- ===== COMPARISON TABLE ===== -->
+  <div class="compare">
+    <table>
+      <tr>
+        <th style="width:140px;">Dimension</th>
+        <th>IRIS Pro <span class="badge badge-local" style="margin-left:6px;">Local</span></th>
+        <th>IRIS Core <span class="badge badge-vps" style="margin-left:6px;">VPS</span></th>
+      </tr>
+      <tr>
+        <td>Runs on</td>
+        <td class="col-pro">Your Mac (local machine)</td>
+        <td class="col-core">Hostinger VPS (cloud server)</td>
+      </tr>
+      <tr>
+        <td>AI engine</td>
+        <td class="col-pro">Claude Code (subscription) &mdash; Opus/Sonnet/Haiku routing</td>
+        <td class="col-core">Anthropic API direct (Sonnet) &mdash; ~$0.20/user</td>
+      </tr>
+      <tr>
+        <td>Always on?</td>
+        <td class="col-pro">No &mdash; runs when you use Claude Code or dashboard</td>
+        <td class="col-core">Yes &mdash; systemd service, auto-restart on failure</td>
+      </tr>
+      <tr>
+        <td>Telegram bot</td>
+        <td class="col-pro">@IrisProBot &mdash; separate token, local daemon</td>
+        <td class="col-core">@IrisAccountabilityBot &mdash; separate token, VPS daemon</td>
+      </tr>
+      <tr>
+        <td>Purpose</td>
+        <td class="col-pro">Ongoing accountability + full AIOS (38 skills, 7 MCP connectors, memory, dashboard)</td>
+        <td class="col-core">Single Mt. Everest session (free) &rarr; upgrade funnel</td>
+      </tr>
+      <tr>
+        <td>Database</td>
+        <td class="col-pro">projects.db, tasks.db, accountability.db</td>
+        <td class="col-core">iris_core.db (users, sessions, signups)</td>
+      </tr>
+      <tr>
+        <td>Memory</td>
+        <td class="col-pro">3-tier: core + logs + vectors</td>
+        <td class="col-core">In-memory dict + SQLite summary only</td>
+      </tr>
+      <tr>
+        <td>Access points</td>
+        <td class="col-pro">6 interfaces + 7 MCP connectors (Gmail, GCal, Slack, Canva, Chrome, Preview, Tasks)</td>
+        <td class="col-core">2: Telegram bot + web signup form</td>
+      </tr>
+      <tr>
+        <td>Shared state?</td>
+        <td colspan="2" style="text-align:center;color:#f87171;font-weight:500;">None. Completely independent. Separate databases, AI, processes, bot tokens.</td>
+      </tr>
+      <tr>
+        <td>Connection</td>
+        <td colspan="2" style="text-align:center;color:#fbbf24;">Upgrade link only: Core session ends &rarr; user gets iris-ai.co link &rarr; signs up for Pro</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">&#9670; Data &amp; Trigger Flows</div>
+
+  <!-- ===== FLOW: Free User ===== -->
+  <div class="flow-section" style="grid-column: 1 / -1;">
+    <div class="flow-section-title">Flow 1 &mdash; Free User (IRIS Core &middot; VPS &middot; @IrisAccountabilityBot)</div>
+    <div class="flow-row">
+      <span class="fn fn-user">&#128100; Visits iris-ai.co</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-vps">Flask :8080 captures email</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-action">Generates signup token</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-vps">Creates Telegram deeplink</span>
+    </div>
+    <div class="flow-row">
+      <span class="fn fn-user">&#128241; Opens @IrisAccountabilityBot</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-vps">Bot /start + token</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-action">Links email &rarr; Telegram ID</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-vps">Starts Mt. Everest</span>
+    </div>
+    <div class="flow-row">
+      <span class="fn fn-user">&#128172; 8-15 messages</span>
+      <span class="fa">&harr;</span>
+      <span class="fn fn-vps">Bot &harr; Anthropic API</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-action">Detects summary</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-vps">Saves to iris_core.db</span>
+    </div>
+    <div class="flow-row">
+      <span class="fn fn-vps">email_sender.py</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-cloud">Gmail SMTP</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-user">&#128231; Summary email</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-action" style="border-color:#5a3a1a;">Upgrade link &rarr; IRIS Pro</span>
+    </div>
+    <div class="flow-row" style="margin-top:4px;">
+      <span class="fn fn-gap">&#9888; Memory gap: if user upgrades, Pro doesn't know about this conversation</span>
+    </div>
+  </div>
+
+  <!-- ===== FLOW: Pro User ===== -->
+  <div class="flow-section" style="grid-column: 1 / -1;">
+    <div class="flow-section-title">Flow 2 &mdash; Pro User (IRIS Pro &middot; Local Mac &middot; Any Claude Code Interface)</div>
+    <div class="flow-label">Session Start (any interface)</div>
+    <div class="flow-row">
+      <span class="fn fn-user">Opens Claude Code (CLI / Desktop / Web / IDE)</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">Loads CLAUDE.md kernel</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">Reads MEMORY.md + daily log</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">Ready &mdash; full context</span>
+    </div>
+    <div class="flow-label" style="margin-top:8px;">What Triggers What</div>
+    <div class="flow-row">
+      <span class="fn fn-user">Mentions a task</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">IRIS matches skill</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">Runs scripts (Python)</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-action">Logs to projects.db</span>
+    </div>
+    <div class="flow-row">
+      <span class="fn fn-local">Session ends (Stop hook fires)</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">auto_capture.py</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-cloud">Extracts facts &rarr; Upstash Vector</span>
+    </div>
+    <div class="flow-label" style="margin-top:8px;">Dashboard</div>
+    <div class="flow-row">
+      <span class="fn fn-user">&#127760; Opens localhost:5050</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">Flask reads projects.db</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-user">Sees kanban, metrics</span>
+    </div>
+    <div class="flow-label" style="margin-top:8px;">Pro Telegram</div>
+    <div class="flow-row">
+      <span class="fn fn-user">&#128241; Messages @IrisProBot</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">telegram_handler.py (local)</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">Loads memory via smart_search</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">Invokes Claude Code</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-cloud">Saves to Upstash Vector</span>
+    </div>
+  </div>
+
+  <!-- ===== FLOW: MCP Connectors ===== -->
+  <div class="flow-section" style="grid-column: 1 / -1;">
+    <div class="flow-section-title">Flow 3 &mdash; MCP Connector Interactions (IRIS Pro &middot; Real-Time External Access)</div>
+    <div class="flow-label">Read / Search (Gmail, Calendar, Slack, Canva)</div>
+    <div class="flow-row">
+      <span class="fn fn-user">Asks about emails / events / messages</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">IRIS matches MCP tool</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-cloud">MCP connector calls API (OAuth)</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">Returns structured data</span>
+    </div>
+    <div class="flow-label" style="margin-top:8px;">Create / Send (requires user confirmation)</div>
+    <div class="flow-row">
+      <span class="fn fn-user">Asks to draft / create / send</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">IRIS prepares action</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-action">User confirms</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-cloud">MCP executes (Gmail, GCal, Slack, Canva)</span>
+    </div>
+    <div class="flow-label" style="margin-top:8px;">Scheduled Tasks</div>
+    <div class="flow-row">
+      <span class="fn fn-user">Defines recurring task</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">Scheduled Tasks MCP stores cron</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-action">Fires on schedule</span>
+      <span class="fa">&rarr;</span>
+      <span class="fn fn-local">Runs Claude Code session</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">&#9670; Key Architecture Insights</div>
+
+  <!-- ===== INSIGHTS ===== -->
+  <div class="insights">
+    <div class="insight">
+      <div class="insight-icon">&#128268;</div>
+      <div class="insight-title">No Live Connection Between Pro &amp; Core</div>
+      <div class="insight-body">
+        Completely separate systems. Different servers, databases, AI engines, bot tokens. The only link is the <strong>upgrade URL</strong>. No API calls, no webhooks, no shared data between them.
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-icon">&#129302;</div>
+      <div class="insight-title">Two Bots, One Personality</div>
+      <div class="insight-body">
+        <strong>@IrisAccountabilityBot</strong> (Core, VPS) and <strong>@IrisProBot</strong> (Pro, local) are separate Telegram bots with separate tokens. Same IRIS voice &mdash; different scope. The bot you message determines what you get.
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-icon">&#128196;</div>
+      <div class="insight-title">Claude Code = 4 Interfaces, 1 Engine</div>
+      <div class="insight-body">
+        CLI, Desktop App, Web App, and IDE extensions all run the <strong>same Claude Code engine</strong> against the same project directory. Same CLAUDE.md, same skills, same memory. Pick the interface that fits your workflow.
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-icon">&#128024;</div>
+      <div class="insight-title">Memory is Pro-Only (for now)</div>
+      <div class="insight-body">
+        Pro has rich 3-tier memory (core facts + daily logs + semantic vectors). Core has <strong>none</strong> beyond a saved summary. This is intentional &mdash; Core is lean for the free tier. But it means no memory carries over on upgrade.
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-icon">&#128203;</div>
+      <div class="insight-title">Core = Funnel, Pro = Product</div>
+      <div class="insight-body">
+        Core gives away <strong>one free session</strong> (Mt. Everest) and converts to Pro. It's lean: one conversation, one summary, one email, one upgrade link. Pro is the full system with 38 skills, 7 MCP connectors, persistent memory, and a dashboard.
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-icon">&#128274;</div>
+      <div class="insight-title">Everything is Self-Contained</div>
+      <div class="insight-body">
+        No message queue. No shared DB server. No orchestrator. Each system is <strong>fully independent</strong>. Pro works without Core. Core works without Pro. Simplicity by design &mdash; complexity only where it earns its keep.
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">&#9670; External Service Dependencies</div>
+
+  <!-- ===== EXTERNAL SERVICES ===== -->
+  <div class="flow-section" style="grid-column: 1 / -1;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <div style="font-size:10px;color:#818cf8;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">IRIS Pro &rarr; External</div>
+        <div style="font-size:9px;color:#555;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;padding-left:8px;">MCP Connectors (Active)</div>
+        <ul class="props" style="margin-bottom:10px;">
+          <li><span class="dot g"></span><span class="k">Gmail</span><span class="v">MCP &mdash; read, search, draft emails</span></li>
+          <li><span class="dot g"></span><span class="k">Google Cal</span><span class="v">MCP &mdash; events, scheduling, free time</span></li>
+          <li><span class="dot g"></span><span class="k">Slack</span><span class="v">MCP &mdash; messages, search, canvases</span></li>
+          <li><span class="dot g"></span><span class="k">Canva</span><span class="v">MCP &mdash; design, edit, export</span></li>
+          <li><span class="dot g"></span><span class="k">Chrome</span><span class="v">MCP &mdash; browser automation</span></li>
+          <li><span class="dot g"></span><span class="k">Preview</span><span class="v">MCP &mdash; dev server preview</span></li>
+          <li><span class="dot g"></span><span class="k">Tasks</span><span class="v">MCP &mdash; scheduled cron agents</span></li>
+        </ul>
+        <div style="font-size:9px;color:#555;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;padding-left:8px;">API Services</div>
+        <ul class="props">
+          <li><span class="dot g"></span><span class="k">Anthropic</span><span class="v">Claude via subscription (no API key)</span></li>
+          <li><span class="dot y"></span><span class="k">Upstash</span><span class="v">Vector memory (free tier, needs keys)</span></li>
+          <li><span class="dot y"></span><span class="k">OpenAI</span><span class="v">Embeddings for mem0 (~$0.50/mo)</span></li>
+          <li><span class="dot y"></span><span class="k">Telegram</span><span class="v">@IrisProBot (needs own token)</span></li>
+          <li><span class="dot gr"></span><span class="k">Gamma</span><span class="v">Optional slide generation</span></li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-size:10px;color:#6ee7b7;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">IRIS Core &rarr; External</div>
+        <ul class="props">
+          <li><span class="dot g"></span><span class="k">Anthropic</span><span class="v">Claude Sonnet via API (pay-per-token)</span></li>
+          <li><span class="dot g"></span><span class="k">Telegram</span><span class="v">@IrisAccountabilityBot (own token)</span></li>
+          <li><span class="dot y"></span><span class="k">Gmail</span><span class="v">SMTP for summary emails</span></li>
+        </ul>
+        <div style="margin-top:12px;padding:10px;background:#0a0a10;border-radius:6px;font-size:10px;color:#555;line-height:1.6;">
+          Core is leaner &mdash; 3 external dependencies vs Pro's 14+ (7 MCP connectors + API services). By design: cheap and reliable for a free-tier product.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
