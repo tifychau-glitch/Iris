@@ -18,7 +18,8 @@ Process the Gmail inbox to identify high-risk/high-priority emails, analyze sent
 ## Inputs Required
 
 - Gmail API credentials (see `docs/UPGRADE-PATHS.md` for setup)
-- Slack webhook or bot token (optional — for Slack delivery)
+- Claude API key (for sentiment analysis)
+- Telegram bot token (optional — for Telegram delivery)
 
 ## Execution Steps
 
@@ -45,6 +46,8 @@ python3 .claude/skills/email-digest/scripts/analyze_emails.py --input emails.jso
 - **Recommendation**: What to do and why
 - **Draft response**: Suggested reply (if category is urgent or respond)
 
+**Sentiment analysis** uses Claude API to categorize tone and urgency.
+
 **Special detection — IRATE CLIENT:**
 If sentiment analysis detects anger, frustration, or escalation:
 - Flag as highest priority
@@ -52,31 +55,42 @@ If sentiment analysis detects anger, frustration, or escalation:
 - Recommend same-day personal follow-up
 - Note in daily log
 
-### Step 3: Post Executive Briefing to Slack
+### Step 3: Send Email Digest
 
 ```bash
-python3 .claude/skills/email-digest/scripts/post_to_slack_blocks.py --input analysis.json
+python3 .claude/skills/email-digest/scripts/send_email_digest.py --input analysis.json --recipient-email "user@example.com"
 ```
 
-**Briefing format:**
+**Briefing format (plain text):**
 ```
-📊 Email Digest — [Date]
-━━━━━━━━━━━━━━━━━━━━━━━
+EMAIL DIGEST — [Date]
 
-🔴 URGENT (2)
-• [Sender] — [Subject] — [Recommendation]
-• [Sender] — [Subject] — [Recommendation]
+URGENT (2)
+[Sender] — [Subject]
+[Recommendation]
 
-🟡 RESPOND (5)
-• [Sender] — [Subject] — [Summary]
+[Sender] — [Subject]
+[Recommendation]
+
+RESPOND (5)
+[Sender] — [Subject]
+[Summary]
 ...
 
-🟢 LOW PRIORITY (12)
-• [count] emails archived
-• [count] newsletters skipped
+LOW PRIORITY (12)
+[count] emails archived
+[count] newsletters skipped
 ```
 
-### Step 4: Create Draft Responses (Optional)
+### Step 4: Send to Telegram (Optional)
+
+```bash
+python3 .claude/skills/email-digest/scripts/send_telegram_digest.py --input analysis.json --telegram-chat-id "123456"
+```
+
+Sends the same digest to Telegram for immediate notifications.
+
+### Step 5: Create Draft Responses (Optional)
 
 ```bash
 python3 .claude/skills/email-digest/scripts/create_gmail_drafts.py --input analysis.json
@@ -93,9 +107,11 @@ Gmail Inbox
    ↓
 2. Analyze (sentiment + urgency + recommendations) → analysis.json
    ↓
-3. Post briefing → Slack
+3. Send briefing → Email
    ↓
-4. (Optional) Create drafts → Gmail
+4. (Optional) Send → Telegram
+   ↓
+5. (Optional) Create drafts → Gmail
 ```
 
 ## Automation
@@ -119,7 +135,6 @@ Schedule with headless mode:
 ```bash
 GOOGLE_CLIENT_ID=         # Gmail API
 GOOGLE_CLIENT_SECRET=     # Gmail API
-SLACK_BOT_TOKEN=          # Slack posting
-SLACK_CHANNEL_ID=         # Where to post briefings
-OPENAI_API_KEY=           # Sentiment analysis
+ANTHROPIC_API_KEY=        # Claude API for sentiment analysis
+TELEGRAM_BOT_TOKEN=       # Optional: Telegram notifications
 ```
