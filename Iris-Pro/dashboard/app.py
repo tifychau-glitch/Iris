@@ -677,6 +677,55 @@ def settings_page():
     return send_from_directory(".", "settings.html")
 
 
+# --- Build Log ---
+
+BUILD_LOG_PATH = PROJECT_ROOT / "IRIS-BUILD-LOG.md"
+
+
+def _parse_build_log():
+    """Parse IRIS-BUILD-LOG.md into structured entries."""
+    if not BUILD_LOG_PATH.exists():
+        return {"actions": [], "questions": []}
+
+    text = BUILD_LOG_PATH.read_text()
+    entries = {"actions": [], "questions": []}
+
+    # Split on entry headers: "## [TYPE] DATE — TITLE"
+    import re
+    pattern = re.compile(r"^## \[(ACTION|QUESTION)\] (\d{4}-\d{2}-\d{2}) — (.+)$", re.MULTILINE)
+    matches = list(pattern.finditer(text))
+
+    for i, m in enumerate(matches):
+        entry_type = m.group(1)
+        date = m.group(2)
+        title = m.group(3).strip()
+        start = m.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        body = text[start:end].strip()
+        # Stop body at next top-level section (## Actions / ## Questions)
+        body = re.split(r"^---\s*$|^## (?!\[)", body, maxsplit=1, flags=re.MULTILINE)[0].strip()
+
+        entry = {"date": date, "title": title, "body": body}
+        if entry_type == "ACTION":
+            entries["actions"].append(entry)
+        else:
+            entries["questions"].append(entry)
+
+    return entries
+
+
+@app.route("/build-log")
+@login_required
+def build_log_page():
+    return send_from_directory(".", "build-log.html")
+
+
+@app.route("/api/build-log", methods=["GET"])
+@login_required
+def build_log_api():
+    return jsonify(_parse_build_log())
+
+
 @app.route("/api/connectors", methods=["GET"])
 @login_required
 def list_connectors():

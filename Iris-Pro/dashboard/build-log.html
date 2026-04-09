@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build Log — IRIS</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f0f0f;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 24px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #222;
+  }
+
+  header h1 { font-size: 20px; font-weight: 600; color: #fff; }
+
+  .nav-pills {
+    display: flex;
+    gap: 4px;
+    background: #181818;
+    border-radius: 10px;
+    padding: 3px;
+  }
+
+  .nav-pills a {
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #888;
+    text-decoration: none;
+  }
+
+  .nav-pills a.active {
+    background: #333;
+    color: #fff;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+
+  .page-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .page-sub {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 28px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    align-items: center;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: #181818;
+    border-radius: 10px;
+    padding: 3px;
+  }
+
+  .tab {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #888;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.15s;
+  }
+
+  .tab.active {
+    background: #333;
+    color: #fff;
+  }
+
+  .tab .count {
+    margin-left: 6px;
+    font-size: 11px;
+    color: #666;
+  }
+
+  .tab.active .count { color: #aaa; }
+
+  .search-box {
+    flex: 1;
+    background: #181818;
+    border: 1px solid #222;
+    color: #e0e0e0;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+  }
+
+  .search-box:focus { border-color: #444; }
+
+  .sort-btn {
+    background: #181818;
+    border: 1px solid #222;
+    color: #aaa;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .sort-btn:hover { color: #fff; }
+
+  .entries {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .entry {
+    background: #181818;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 18px 20px;
+    transition: border-color 0.15s;
+  }
+
+  .entry:hover { border-color: #2e2e2e; }
+
+  .entry-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .entry-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.4;
+  }
+
+  .entry-date {
+    font-size: 12px;
+    color: #666;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .entry-body {
+    font-size: 14px;
+    color: #bbb;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .entry-body strong { color: #e0e0e0; font-weight: 600; }
+
+  .empty {
+    text-align: center;
+    color: #555;
+    padding: 60px 20px;
+    font-size: 14px;
+  }
+
+  .hidden { display: none; }
+
+  mark {
+    background: #3b3a1a;
+    color: #f5d76e;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+
+  .row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .row:last-of-type { margin-bottom: 24px; }
+
+  .spacer { flex: 1; }
+
+  .date-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #181818;
+    border: 1px solid #222;
+    border-radius: 10px;
+    padding: 4px;
+  }
+
+  .date-nav button {
+    background: transparent;
+    border: none;
+    color: #888;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .date-nav button:hover { background: #222; color: #fff; }
+
+  .date-nav .label {
+    padding: 0 12px;
+    font-size: 13px;
+    color: #e0e0e0;
+    font-weight: 500;
+    min-width: 140px;
+    text-align: center;
+  }
+
+  .date-nav.hidden { display: none; }
+
+  .day-group {
+    margin-bottom: 24px;
+  }
+
+  .day-group-header {
+    font-size: 12px;
+    color: #666;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #1f1f1f;
+  }
+
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    background: #181818;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .month-grid .dow {
+    font-size: 11px;
+    color: #555;
+    text-align: center;
+    padding: 6px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+
+  .day-cell {
+    aspect-ratio: 1;
+    background: #141414;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 60px;
+  }
+
+  .day-cell.empty {
+    background: transparent;
+    cursor: default;
+  }
+
+  .day-cell.other-month {
+    opacity: 0.25;
+  }
+
+  .day-cell.has-entries {
+    background: #1f1f1f;
+    border-color: #2a2a2a;
+  }
+
+  .day-cell.has-entries:hover {
+    border-color: #444;
+    background: #242424;
+  }
+
+  .day-cell.today .day-num {
+    color: #4ade80;
+    font-weight: 700;
+  }
+
+  .day-num {
+    font-size: 12px;
+    color: #888;
+    font-weight: 500;
+  }
+
+  .day-cell.has-entries .day-num { color: #fff; }
+
+  .day-badge {
+    font-size: 10px;
+    color: #aaa;
+    background: #333;
+    padding: 2px 6px;
+    border-radius: 10px;
+    align-self: flex-start;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:24px;">
+    <h1>IRIS</h1>
+    <div class="nav-pills">
+      <a href="/">Projects</a>
+      <a href="/build-log" class="active">Build Log</a>
+      <a href="/settings">Settings</a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="page-title">Build Log</div>
+  <div class="page-sub">Every action and question during the IRIS build. Auto-updated as we work.</div>
+
+  <div class="row">
+    <div class="tabs">
+      <button class="tab active" data-tab="actions">Actions <span class="count" id="count-actions">0</span></button>
+      <button class="tab" data-tab="questions">Questions <span class="count" id="count-questions">0</span></button>
+    </div>
+    <input type="text" class="search-box" id="search" placeholder="Search everything — e.g. pinecone, landing page…">
+  </div>
+
+  <div class="row">
+    <div class="tabs">
+      <button class="tab" data-view="day">Day</button>
+      <button class="tab" data-view="week">Week</button>
+      <button class="tab" data-view="month">Month</button>
+      <button class="tab active" data-view="all">All</button>
+    </div>
+    <div class="date-nav hidden" id="date-nav">
+      <button id="date-prev">◀</button>
+      <span class="label" id="date-label">—</span>
+      <button id="date-next">▶</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="sort-btn" id="sort-btn">Newest first ↓</button>
+  </div>
+
+  <div class="entries" id="entries"></div>
+</div>
+
+<script>
+  let data = { actions: [], questions: [] };
+  let activeTab = 'actions';
+  let viewMode = 'all'; // 'day' | 'week' | 'month' | 'all'
+  let anchorDate = new Date(); // the date used for day/week/month filtering
+  let sortNewestFirst = true;
+  let searchQuery = '';
+
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function formatBody(body) {
+    let html = escapeHtml(body).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    return html;
+  }
+
+  function highlight(html, query) {
+    if (!query) return html;
+    const q = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return html.replace(new RegExp('(' + q + ')', 'gi'), '<mark>$1</mark>');
+  }
+
+  // --- Date helpers (all work in local time, dates are YYYY-MM-DD strings) ---
+
+  function toISO(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function parseISO(s) {
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function addDays(d, n) {
+    const r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+  }
+
+  function startOfWeek(d) {
+    const r = new Date(d);
+    r.setDate(r.getDate() - r.getDay()); // Sunday
+    return r;
+  }
+
+  function formatDayLabel(d) {
+    return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  }
+
+  function formatWeekLabel(d) {
+    const start = startOfWeek(d);
+    const end = addDays(start, 6);
+    if (start.getMonth() === end.getMonth()) {
+      return `${MONTHS[start.getMonth()].slice(0,3)} ${start.getDate()}–${end.getDate()}, ${start.getFullYear()}`;
+    }
+    return `${MONTHS[start.getMonth()].slice(0,3)} ${start.getDate()} – ${MONTHS[end.getMonth()].slice(0,3)} ${end.getDate()}, ${end.getFullYear()}`;
+  }
+
+  function formatMonthLabel(d) {
+    return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  // --- Filtering ---
+
+  function inRange(entryDate, mode, anchor) {
+    if (mode === 'all') return true;
+    if (mode === 'day') return entryDate === toISO(anchor);
+    if (mode === 'week') {
+      const ws = toISO(startOfWeek(anchor));
+      const we = toISO(addDays(startOfWeek(anchor), 6));
+      return entryDate >= ws && entryDate <= we;
+    }
+    if (mode === 'month') {
+      return entryDate.slice(0, 7) === toISO(anchor).slice(0, 7);
+    }
+    return true;
+  }
+
+  function getFilteredEntries() {
+    const entries = data[activeTab] || [];
+    const q = searchQuery.trim().toLowerCase();
+
+    // Search is global — bypasses date filter.
+    return entries.filter(e => {
+      if (q) return (e.title + ' ' + e.body).toLowerCase().includes(q);
+      return inRange(e.date, viewMode, anchorDate);
+    });
+  }
+
+  function entryHtml(e, q) {
+    return `
+      <div class="entry">
+        <div class="entry-head">
+          <div class="entry-title">${highlight(escapeHtml(e.title), q)}</div>
+          <div class="entry-date">${e.date}</div>
+        </div>
+        <div class="entry-body">${highlight(formatBody(e.body), q)}</div>
+      </div>
+    `;
+  }
+
+  function renderFlatList(entries, q) {
+    const sorted = [...entries].sort((a, b) =>
+      sortNewestFirst ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)
+    );
+    return sorted.map(e => entryHtml(e, q)).join('');
+  }
+
+  function renderGroupedByDay(entries, q) {
+    // Group by date, then render each group with a day header.
+    const groups = {};
+    entries.forEach(e => {
+      if (!groups[e.date]) groups[e.date] = [];
+      groups[e.date].push(e);
+    });
+    const dates = Object.keys(groups).sort((a, b) =>
+      sortNewestFirst ? b.localeCompare(a) : a.localeCompare(b)
+    );
+    if (dates.length === 0) return '';
+    return dates.map(date => {
+      const d = parseISO(date);
+      const header = `${DOW[d.getDay()]}, ${formatDayLabel(d)}`;
+      return `
+        <div class="day-group">
+          <div class="day-group-header">${header}</div>
+          ${groups[date].map(e => entryHtml(e, q)).join('')}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderMonthGrid() {
+    // Build a grid showing all days of the anchor month, with entry counts.
+    const year = anchorDate.getFullYear();
+    const month = anchorDate.getMonth();
+    const firstOfMonth = new Date(year, month, 1);
+    const startOffset = firstOfMonth.getDay(); // Sunday = 0
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Count entries per day across BOTH tabs (so the shape of the month is visible regardless of tab).
+    const allEntries = [...(data.actions || []), ...(data.questions || [])];
+    const activeEntries = data[activeTab] || [];
+    const counts = {};
+    activeEntries.forEach(e => {
+      counts[e.date] = (counts[e.date] || 0) + 1;
+    });
+
+    const todayISO = toISO(new Date());
+
+    let cells = '';
+    // DOW headers
+    DOW.forEach(d => { cells += `<div class="dow">${d}</div>`; });
+    // Leading blanks
+    for (let i = 0; i < startOffset; i++) {
+      cells += `<div class="day-cell empty"></div>`;
+    }
+    // Days of month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      const iso = toISO(d);
+      const count = counts[iso] || 0;
+      const classes = ['day-cell'];
+      if (count > 0) classes.push('has-entries');
+      if (iso === todayISO) classes.push('today');
+      cells += `
+        <div class="${classes.join(' ')}" data-date="${iso}">
+          <div class="day-num">${day}</div>
+          ${count > 0 ? `<div class="day-badge">${count}</div>` : ''}
+        </div>
+      `;
+    }
+
+    return `<div class="month-grid">${cells}</div>`;
+  }
+
+  // --- Main render ---
+
+  function render() {
+    const container = document.getElementById('entries');
+    const q = searchQuery.trim().toLowerCase();
+    const searching = q.length > 0;
+
+    // Date nav visibility: hide in 'all' mode, or when searching (search is global).
+    const dateNav = document.getElementById('date-nav');
+    if (viewMode === 'all' || searching) {
+      dateNav.classList.add('hidden');
+    } else {
+      dateNav.classList.remove('hidden');
+      const label = document.getElementById('date-label');
+      if (viewMode === 'day') label.textContent = formatDayLabel(anchorDate);
+      else if (viewMode === 'week') label.textContent = formatWeekLabel(anchorDate);
+      else if (viewMode === 'month') label.textContent = formatMonthLabel(anchorDate);
+    }
+
+    // Month view with no search: render calendar grid instead of a list.
+    if (viewMode === 'month' && !searching) {
+      container.innerHTML = renderMonthGrid();
+      // Wire up click-to-drill-down on day cells with entries.
+      container.querySelectorAll('.day-cell.has-entries').forEach(cell => {
+        cell.addEventListener('click', () => {
+          anchorDate = parseISO(cell.dataset.date);
+          setView('day');
+        });
+      });
+      return;
+    }
+
+    const filtered = getFilteredEntries();
+
+    if (filtered.length === 0) {
+      let msg;
+      if (searching) msg = 'No entries match your search.';
+      else if (viewMode === 'day') msg = 'Nothing on this day.';
+      else if (viewMode === 'week') msg = 'Nothing this week.';
+      else msg = 'No entries yet.';
+      container.innerHTML = `<div class="empty">${msg}</div>`;
+      return;
+    }
+
+    // Day / All: flat list. Week: grouped by day.
+    if (viewMode === 'week' && !searching) {
+      container.innerHTML = renderGroupedByDay(filtered, q);
+    } else {
+      container.innerHTML = renderFlatList(filtered, q);
+    }
+  }
+
+  function setView(mode) {
+    viewMode = mode;
+    document.querySelectorAll('.tab[data-view]').forEach(b => {
+      b.classList.toggle('active', b.dataset.view === mode);
+    });
+    render();
+  }
+
+  function shiftAnchor(delta) {
+    if (viewMode === 'day') anchorDate = addDays(anchorDate, delta);
+    else if (viewMode === 'week') anchorDate = addDays(anchorDate, 7 * delta);
+    else if (viewMode === 'month') {
+      anchorDate = new Date(anchorDate.getFullYear(), anchorDate.getMonth() + delta, 1);
+    }
+    render();
+  }
+
+  async function load() {
+    const res = await fetch('/api/build-log');
+    data = await res.json();
+    document.getElementById('count-actions').textContent = data.actions.length;
+    document.getElementById('count-questions').textContent = data.questions.length;
+
+    // Anchor to the most recent entry so the user lands on real data.
+    const allDates = [...data.actions, ...data.questions].map(e => e.date).sort();
+    if (allDates.length > 0) anchorDate = parseISO(allDates[allDates.length - 1]);
+
+    render();
+  }
+
+  // Tab clicks (Actions/Questions)
+  document.querySelectorAll('.tab[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab[data-tab]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeTab = btn.dataset.tab;
+      render();
+    });
+  });
+
+  // View mode clicks (Day/Week/Month/All)
+  document.querySelectorAll('.tab[data-view]').forEach(btn => {
+    btn.addEventListener('click', () => setView(btn.dataset.view));
+  });
+
+  document.getElementById('date-prev').addEventListener('click', () => shiftAnchor(-1));
+  document.getElementById('date-next').addEventListener('click', () => shiftAnchor(1));
+
+  document.getElementById('search').addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    render();
+  });
+
+  document.getElementById('sort-btn').addEventListener('click', (e) => {
+    sortNewestFirst = !sortNewestFirst;
+    e.target.textContent = sortNewestFirst ? 'Newest first ↓' : 'Oldest first ↑';
+    render();
+  });
+
+  load();
+</script>
+
+</body>
+</html>
