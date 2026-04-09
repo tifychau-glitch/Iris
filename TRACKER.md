@@ -1,6 +1,6 @@
 # IRIS Project Tracker
 
-> Last updated: 2026-04-06
+> Last updated: 2026-04-09
 
 ---
 
@@ -68,6 +68,12 @@
 
 ## Recently Completed
 
+- [x] **5 silent-capture accountability skills shipped** — friction-log, goal-decay-tracker, honest-recommit, energy-mapping, iris-journal. Consent-scoped, threshold-gated, no receipts-style lists `#accountability` `#skills` (completed 2026-04-09)
+- [x] **IRIS Journal** — Read-only unified view across all silent-capture skills. Zero new storage, computes state at read time `#accountability` (completed 2026-04-09)
+- [x] **email-digest migrated to Telegram** — Swapped Slack for Telegram delivery, added Claude sentiment pass `#email` `#telegram` (completed 2026-04-09)
+- [x] **Dashboard Build Log feature** — /build-log route, API endpoint, new page, IRIS-BUILD-LOG.md living record, session-log backfill script `#dashboard` (completed 2026-04-09)
+- [x] **Architecture HTMLs moved to iris-brain** — iris-architecture, iris-diagram, iris-system-map relocated to canonical home `#docs` `#cleanup` (completed 2026-04-09)
+- [x] **CLAUDE.md overhaul** — Trimmed from 404 → 242 lines. Leaner handbook, same identity + voice + operating rules `#core` `#docs` (completed 2026-04-09)
 - [x] **Accountability engine wired to Telegram** — telegram_handler.py calls get_level + log_interaction, accountability context injected into every response `#accountability` (completed 2026-04-06)
 - [x] **5 accountability scheduled tasks** — followup (30min), ghost detector (6h), EOD summary (9PM), missed tasks (11:55PM), task sync (7AM) `#automation` (completed 2026-04-06)
 - [x] **Post-changes audit + fixes** — Comprehensive audit: fixed skill counts (25), setup.sh→install.sh refs, dead code, Telegram whitelist gap, Upstash made optional, car-wash hardcoded paths, stale TRACKER entries `#cleanup` (completed 2026-04-06)
