@@ -66,7 +66,7 @@ A free, open-source template that transforms a Claude Code workspace into a stru
 
 ```
 iris/
-├── CLAUDE.md                    # Kernel (~80 lines)
+├── IRIS.md                      # Kernel — system handbook (CLAUDE.md is a 1-line pointer)
 ├── install.sh                   # One-command setup
 ├── .claude/
 │   ├── skills/                  # 25 skills (your programs)
@@ -84,7 +84,7 @@ iris/
 
 | OS Concept | AI OS Equivalent |
 |------------|-----------------|
-| Kernel | CLAUDE.md — system instructions |
+| Kernel | IRIS.md — system instructions |
 | Programs | Skills — auto-discovered workflows |
 | Security | Hooks — guardrails and automation |
 | Workers | Agents — specialized subprocesses |

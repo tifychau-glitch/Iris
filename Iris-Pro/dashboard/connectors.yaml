@@ -42,6 +42,18 @@ connectors:
         sensitive: true
     test_script: test_gmail.py
 
+  - name: obsidian_vault
+    display_name: Obsidian Vault
+    category: memory
+    required: false
+    description: "Your second brain. Point IRIS at a local Obsidian vault folder — if empty or new, IRIS will scaffold a starter vault for you. Leave the path blank to use the default (~/Documents/Iris Vault)."
+    fields:
+      - key: IRIS_VAULT_PATH
+        label: Vault Path
+        hint: "Absolute path to your vault folder. Leave blank for default: ~/Documents/Iris Vault"
+        sensitive: false
+    test_script: test_obsidian_vault.py
+
   - name: pinecone
     display_name: Pinecone
     category: memory

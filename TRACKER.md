@@ -9,7 +9,7 @@
 - [ ] **Accountability engine tuning** — Engine wired to Telegram + 5 scheduled tasks created, needs real user testing to calibrate thresholds `#accountability` (added 2026-04-05)
 - [ ] **Iris Core VPS hardening** — Bot deployed and running, needs monitoring and edge case handling for multi-user load `#core` (added 2026-04-05)
 - [ ] **Onboarding flow polish** — Setup wizard skill exists, needs end-to-end testing with a fresh user `#onboarding` (added 2026-04-05)
-- [ ] **Memory system activation** — Tier 3 (Upstash Vector + mem0) built but needs API keys configured and tested `#memory` (added 2026-04-05)
+- [ ] **Connect real vault + run real compiler pass** — Set `IRIS_VAULT_PATH` in `.env`, open in Obsidian, fill in `me.md` + `my-business.md` with real content, let the silent-capture skills accumulate a week of data, then run compiler for real `#memory` `#accountability` (added 2026-04-09)
 
 ---
 
@@ -37,6 +37,34 @@
 - [ ] **Life dashboard categories** — Health, personal, financial tracking beyond business `#dashboard` (added 2026-04-04)
 - [ ] **Multi-channel notifications** — Slack + email + Telegram coordinated check-ins `#notifications` (added 2026-04-05)
 
+### Obsidian Vault / AIOS Pivot (Phases 1-3a shipped 2026-04-09)
+
+**Phase 3b — Dashboard review UI for compiler**
+- [ ] **Dashboard Proposals page** — list pending proposals, approve/reject/apply buttons, status filters. Mirrors `review.py` CLI with better UX `#dashboard` `#memory` (added 2026-04-09)
+- [ ] **Wire compiler run button** — dashboard action to trigger `compile.py --format json` and show the new proposals inline `#dashboard` `#memory` (added 2026-04-09)
+
+**Phase 3c — Scheduled compiler runs**
+- [ ] **Nightly compiler cron** — via scheduled-tasks skill, run `compile.py` at 11pm, count new proposals `#automation` `#memory` (added 2026-04-09)
+- [ ] **Telegram surface** — if nightly run produces proposals, send "IRIS noticed N things overnight. Review?" via Telegram `#telegram` `#accountability` (added 2026-04-09)
+
+**Phase 4 — Polish**
+- [ ] **`me.md` linter** — warns on Claude-specific syntax, enforces model portability `#core` (added 2026-04-09)
+- [ ] **Starter `Concepts/` examples** — seed new users with example synthesized articles `#onboarding` (added 2026-04-09)
+- [ ] **Vault usage docs** — "How to use your vault with Iris" guide `#docs` `#onboarding` (added 2026-04-09)
+- [ ] **Identity-edit proposals** — extend compiler to propose edits to `me.md`/`my-business.md` with diff preview + explicit confirm `#memory` (added 2026-04-09)
+
+**Phase 5 — Scale (deferred until needed)**
+- [ ] **FTS5 fallback search** — only when `index.md` navigation isn't enough `#memory` (added 2026-04-09)
+- [ ] **Vector search layer** — optional, rare unstructured-query edge case `#memory` (added 2026-04-09)
+- [ ] **File watchers / staleness handling** — only if the semantic layer gets added `#automation` (added 2026-04-09)
+
+**Deprecation (after Phase 3 stable + real usage data)**
+- [ ] **Migrate existing mem0 data** — one-shot export to `vault/imported/`, curate manually `#memory` `#cleanup` (added 2026-04-09)
+- [ ] **Remove `mem0` skill** `#cleanup` (added 2026-04-09)
+- [ ] **Remove Upstash Vector config** `#cleanup` (added 2026-04-09)
+- [ ] **Deprecate Pinecone connector** — already optional, mark as legacy `#cleanup` (added 2026-04-09)
+- [ ] **Rewrite `auto_capture.py`** — redirect from mem0 → Iris Journal + vault `#memory` `#core` (added 2026-04-09)
+
 ---
 
 ## Known Bugs
@@ -53,6 +81,12 @@
 
 > Not committed. Showed interest, worth revisiting. No timeline.
 
+- [ ] **"Starter vault" onboarding path** — for users who've never used Obsidian. Auto-creates vault folder, walks through Obsidian install, drags it into dashboard. Second track alongside "Connect existing vault" `#onboarding` (added 2026-04-09)
+- [ ] **Compiler review via Telegram** — batch proposal approvals in Telegram instead of (or in addition to) dashboard. Might drive higher engagement `#accountability` `#telegram` (added 2026-04-09)
+- [ ] **`me.md` linter — warning or hard block?** — decide how strictly to enforce model portability in user-written identity files `#core` (added 2026-04-09)
+- [ ] **Marketing positioning: AIOS-native vs standalone** — pick a lane before Phase 4 onboarding polish. Tradeoff: narrower ICP + stronger narrative vs broader reach + weaker differentiation `#launch` `#marketing` (added 2026-04-09)
+- [ ] **Observation → vault proposal loop** — Iris notices a pattern (e.g. repeated word usage) → proposes adding to `me.md` → user approves. Preserves "Iris learns you" magic without violating user ownership `#accountability` `#memory` (added 2026-04-09)
+- [ ] **Behavioral vs aspirational gap surfacing** — user writes aspirationally in vault, behaves differently in journal. Iris should explicitly name this gap in check-ins — core accountability signal `#accountability` (added 2026-04-09)
 - [ ] **White label licensing** — Architecture already supports it, could license IRIS to other coaches `#business` (added 2026-04-04)
 - [ ] **IRIS API** — Accountability-as-a-service for other platforms `#business` (added 2026-04-04)
 - [ ] **Financial stakes tracking** — Legal complexity, consider Beeminder partnership instead of building `#accountability` (added 2026-04-04)
@@ -68,6 +102,10 @@
 
 ## Recently Completed
 
+- [x] **Phase 3a: Compiler skill MVP shipped** — `compile.py` reads journal (via iris-journal subprocess) + vault identity, calls LLM via `ai_provider`, stores proposals in `data/compiler_proposals.db`. `review.py` CLI handles list/show/approve/reject/apply. Types: `new_concept`, `append_to_effort`, `observation`. Trust contract enforced at 3 layers. Validated end-to-end with real LLM — produced "Real-Person Gate" concept from 7 synthetic friction entries, correctly cited journal + vault sources `#memory` `#accountability` `#skills` (completed 2026-04-09)
+- [x] **Phase 2: vault_context.py + IRIS.md startup instructions** — IRIS reads `index.md` + 4 identity files + `maps/iris-rules.md` + most recent Calendar entry at every returning-user conversation. Graceful fallback when vault not configured. No hook — explicit invocation documented in IRIS.md `#memory` `#core` (completed 2026-04-09)
+- [x] **Phase 1: Obsidian vault foundation** — `vault` skill with `vault_lib.py` (read/write/append-to-section/list), `vault_init.py` (scaffold), `vault_read.py`/`vault_write.py` (CLI). 8 starter templates with guidance prompts. Dashboard "Obsidian Vault" connector card. `CLAUDE.md` → `IRIS.md` rename with 1-line pointer. 5 `_find_project_root()` sentinels updated. Path traversal blocked, append-only trust contract, symlink escapes caught `#memory` `#dashboard` `#onboarding` (completed 2026-04-09)
+- [x] **Architecture pivot to Obsidian vault + markdown-first memory** — 9 locked decisions: no git, two-layer raw/compiled model, `index.md` navigation over search, Iris Journal separate from vault, portable identity files, `CLAUDE.md` → `IRIS.md` rename, append-only reserved sections, retrieval degradation path (direct → grep → FTS5 → vectors), user owns everything. Full context in `memory/logs/2026-04-09.md` `#core` `#memory` (completed 2026-04-09)
 - [x] **5 silent-capture accountability skills shipped** — friction-log, goal-decay-tracker, honest-recommit, energy-mapping, iris-journal. Consent-scoped, threshold-gated, no receipts-style lists `#accountability` `#skills` (completed 2026-04-09)
 - [x] **IRIS Journal** — Read-only unified view across all silent-capture skills. Zero new storage, computes state at read time `#accountability` (completed 2026-04-09)
 - [x] **email-digest migrated to Telegram** — Swapped Slack for Telegram delivery, added Claude sentiment pass `#email` `#telegram` (completed 2026-04-09)

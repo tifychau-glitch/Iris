@@ -26,10 +26,10 @@ import yaml
 # ---------------------------------------------------------------------------
 
 def _find_project_root():
-    """Walk up until we find .env or CLAUDE.md."""
+    """Walk up until we find .env, IRIS.md, or CLAUDE.md."""
     path = Path(__file__).resolve().parent
     while path != path.parent:
-        if (path / ".env").exists() or (path / "CLAUDE.md").exists():
+        if (path / ".env").exists() or (path / "IRIS.md").exists() or (path / "CLAUDE.md").exists():
             return path
         path = path.parent
     raise RuntimeError("Could not find project root")

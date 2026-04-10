@@ -12,13 +12,13 @@ from dotenv import load_dotenv
 
 
 def _find_project_root():
-    """Walk up from this script's directory until we find .env or CLAUDE.md."""
+    """Walk up from this script's directory until we find .env, IRIS.md, or CLAUDE.md."""
     path = Path(__file__).resolve().parent
     while path != path.parent:
-        if (path / ".env").exists() or (path / "CLAUDE.md").exists():
+        if (path / ".env").exists() or (path / "IRIS.md").exists() or (path / "CLAUDE.md").exists():
             return path
         path = path.parent
-    raise RuntimeError("Could not find project root (looked for .env or CLAUDE.md)")
+    raise RuntimeError("Could not find project root (looked for .env, IRIS.md, or CLAUDE.md)")
 
 
 PROJECT_ROOT = _find_project_root()

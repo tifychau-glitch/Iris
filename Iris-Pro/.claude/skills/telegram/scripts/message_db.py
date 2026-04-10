@@ -23,7 +23,7 @@ from typing import Optional, Dict, Any
 def _find_project_root():
     path = Path(__file__).resolve().parent
     while path != path.parent:
-        if (path / ".env").exists() or (path / "CLAUDE.md").exists():
+        if (path / ".env").exists() or (path / "IRIS.md").exists() or (path / "CLAUDE.md").exists():
             return path
         path = path.parent
     raise RuntimeError("Could not find project root")
