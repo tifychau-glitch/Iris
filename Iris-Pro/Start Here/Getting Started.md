@@ -26,12 +26,23 @@ That's it. IRIS handles the rest.
 - **A Claude Code subscription** ($20/month from claude.ai)
 - **A Telegram account** (free — IRIS uses this to check in with you outside the computer)
 
-IRIS will walk you through connecting both during setup. You don't need to do anything beforehand.
+You don't need to install anything manually. "Start IRIS" checks for everything and either installs it automatically or opens the download page for you. Just follow the prompts.
+
+## If something needs to be installed
+
+"Start IRIS" checks three things in order. If any are missing, it helps you install them:
+
+1. **Git** — Mac usually has it. Windows doesn't — the installer opens the download page and tells you to restart your computer after.
+2. **Python** — Mac usually has it. Windows users may need to download it — make sure to check "Add to PATH" during the install.
+3. **Claude Code** — installed automatically (no action needed from you). Uses the native installer from Anthropic, falls back to npm if needed.
+
+After installing anything, just double-click "Start IRIS" again. It picks up where it left off.
 
 ## If something goes wrong
 
-- **"Node.js is not installed"** — IRIS will open the download page for you. Install it, then double-click Start IRIS again.
-- **"Python is not installed"** — Same thing. Install from python.org, then try again.
+- **"Git is not installed"** — Download from the page that opens, install, restart your computer, try again.
+- **"Python is not installed"** — Download from the page that opens. Check "Add to PATH". Try again.
+- **"Could not install Claude Code"** — Follow the manual instructions shown on screen, or visit claude.ai/download.
 - **Dashboard won't open** — Try going to http://localhost:5050 in your browser manually.
 - **Telegram isn't responding** — Make sure you completed the Telegram setup in the dashboard Settings page.
 

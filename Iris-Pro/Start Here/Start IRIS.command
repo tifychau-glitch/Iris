@@ -12,58 +12,110 @@ echo "  IRIS — Starting up"
 echo "  ================================"
 echo ""
 
-# --- Check for Claude Code ---
+# ---------------------------------------------------------------
+# Step 1: Check for Git
+# ---------------------------------------------------------------
+# macOS usually has git via Xcode Command Line Tools. If not,
+# running git triggers the installer dialog automatically.
+if ! command -v git &>/dev/null; then
+    echo "  Git is not installed. macOS will prompt you to install it now..."
+    echo ""
+    # This triggers the Xcode CLT install dialog on macOS
+    xcode-select --install 2>/dev/null
+    echo ""
+    echo "  A dialog should have appeared to install developer tools."
+    echo "  Once it finishes, double-click 'Start IRIS' again."
+    echo ""
+    read -p "  Press Enter to exit..." -r
+    exit 1
+fi
+
+# ---------------------------------------------------------------
+# Step 2: Check for Python
+# ---------------------------------------------------------------
+if ! command -v python3 &>/dev/null; then
+    echo "  Python 3 is not installed."
+    echo ""
+    echo "  The easiest way to install it on Mac:"
+    echo "  1. The developer tools dialog should have installed it."
+    echo "  2. If not, download from python.org (opening it now...)"
+    echo ""
+    open "https://python.org"
+    echo "  After installing Python, double-click 'Start IRIS' again."
+    echo ""
+    read -p "  Press Enter to exit..." -r
+    exit 1
+fi
+
+# ---------------------------------------------------------------
+# Step 3: Check for Claude Code
+# ---------------------------------------------------------------
 if ! command -v claude &>/dev/null; then
     echo "  Claude Code is not installed yet."
+    echo "  Installing now..."
     echo ""
 
-    # Check if Node.js is available
-    if command -v node &>/dev/null && command -v npm &>/dev/null; then
-        echo "  Node.js found. Installing Claude Code..."
+    # Try 1: Native installer (recommended by Anthropic)
+    if curl -fsSL https://claude.ai/install.sh | bash 2>&1; then
+        # Refresh PATH so we can find claude immediately
+        export PATH="$HOME/.claude/bin:$HOME/.local/bin:$PATH"
+    fi
+
+    # Check if it worked
+    if command -v claude &>/dev/null; then
         echo ""
-        npm install -g @anthropic-ai/claude-code 2>&1
-        if command -v claude &>/dev/null; then
+        echo "  Claude Code installed!"
+        echo ""
+    else
+        # Try 2: npm fallback (if user has Node.js from a previous setup)
+        if command -v npm &>/dev/null; then
             echo ""
-            echo "  Claude Code installed!"
+            echo "  Native installer didn't work. Trying npm..."
             echo ""
-        else
+            npm install -g @anthropic-ai/claude-code 2>&1
+
+            if command -v claude &>/dev/null; then
+                echo ""
+                echo "  Claude Code installed via npm!"
+                echo ""
+            fi
+        fi
+
+        # Final check
+        if ! command -v claude &>/dev/null; then
             echo ""
-            echo "  [!] Install failed. Try running this manually:"
-            echo "      sudo npm install -g @anthropic-ai/claude-code"
+            echo "  Could not install Claude Code automatically."
             echo ""
-            echo "  Then double-click 'Start IRIS' again."
+            echo "  Please install it manually:"
+            echo "  1. Open Terminal"
+            echo "  2. Paste: curl -fsSL https://claude.ai/install.sh | bash"
+            echo "  3. Double-click 'Start IRIS' again"
+            echo ""
+            echo "  Or visit: https://claude.ai/download"
             echo ""
             read -p "  Press Enter to exit..." -r
             exit 1
         fi
-    else
-        echo "  To install Claude Code, you need Node.js first."
-        echo ""
-        echo "  Here's what to do:"
-        echo "  1. Go to nodejs.org (opening it now...)"
-        echo "  2. Download and install the LTS version"
-        echo "  3. Double-click 'Start IRIS' again"
-        echo ""
-        open "https://nodejs.org"
-        echo "  After installing Node.js, come back and"
-        echo "  double-click 'Start IRIS' again."
-        echo ""
-        read -p "  Press Enter to exit..." -r
-        exit 1
     fi
 fi
 
-# --- Check for Claude Code subscription ---
-# claude handles its own auth — if not logged in, it'll prompt on launch
+echo "  ✓ Git installed"
+echo "  ✓ Python installed"
+echo "  ✓ Claude Code installed"
+echo ""
 
-# --- First run? Install first. ---
+# ---------------------------------------------------------------
+# Step 4: First run — install IRIS
+# ---------------------------------------------------------------
 if [ ! -f .env ]; then
     echo "  First time? Setting things up..."
     echo ""
     bash install.sh
 fi
 
-# --- Start background services (dashboard + Telegram) ---
+# ---------------------------------------------------------------
+# Step 5: Start background services (dashboard + Telegram)
+# ---------------------------------------------------------------
 if [ -f start.sh ]; then
     bash start.sh &
     sleep 3
@@ -73,7 +125,9 @@ else
     bash install.sh
 fi
 
-# --- Open Claude Code in a new Terminal window ---
+# ---------------------------------------------------------------
+# Step 6: Open Claude Code in a new Terminal window
+# ---------------------------------------------------------------
 echo ""
 echo "  Opening IRIS..."
 echo ""

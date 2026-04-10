@@ -11,38 +11,88 @@ echo  IRIS — Starting up
 echo  ================================
 echo.
 
-REM --- Check for Claude Code ---
+REM ---------------------------------------------------------------
+REM Step 1: Check for Git (Claude Code requires it)
+REM ---------------------------------------------------------------
+where git >nul 2>&1
+if errorlevel 1 (
+    echo  Git is not installed. Claude Code needs it to run.
+    echo.
+    echo  Here's what to do:
+    echo  1. Download Git ^(opening the page now...^)
+    echo  2. Run the installer — use all the default settings
+    echo  3. IMPORTANT: Restart your computer after installing
+    echo  4. Double-click 'Start IRIS' again
+    echo.
+    start https://git-scm.com/download/win
+    echo  After installing Git and restarting, come back
+    echo  and double-click 'Start IRIS' again.
+    echo.
+    pause
+    exit /b 1
+)
+
+REM ---------------------------------------------------------------
+REM Step 2: Check for Python
+REM ---------------------------------------------------------------
+python --version >nul 2>&1
+if errorlevel 1 (
+    echo  Python is not installed. IRIS needs it to run.
+    echo.
+    echo  Here's what to do:
+    echo  1. Download Python ^(opening the page now...^)
+    echo  2. Run the installer
+    echo  3. IMPORTANT: Check the box that says "Add to PATH"
+    echo  4. Double-click 'Start IRIS' again
+    echo.
+    start https://python.org
+    echo  After installing Python, come back and
+    echo  double-click 'Start IRIS' again.
+    echo.
+    pause
+    exit /b 1
+)
+
+REM ---------------------------------------------------------------
+REM Step 3: Check for Claude Code
+REM ---------------------------------------------------------------
 where claude >nul 2>&1
 if errorlevel 1 (
     echo  Claude Code is not installed yet.
+    echo  Installing now...
     echo.
 
-    REM Check if Node.js is available
-    where node >nul 2>&1
-    if errorlevel 1 (
-        echo  To install Claude Code, you need Node.js first.
-        echo.
-        echo  Here's what to do:
-        echo  1. Go to nodejs.org ^(opening it now...^)
-        echo  2. Download and install the LTS version
-        echo  3. Double-click 'Start IRIS' again
-        echo.
-        start https://nodejs.org
-        pause
-        exit /b 1
-    )
+    REM Try 1: Native installer (recommended by Anthropic)
+    echo  Trying native installer...
+    powershell -ExecutionPolicy Bypass -Command "irm https://claude.ai/install.ps1 | iex" 2>nul
 
-    echo  Node.js found. Installing Claude Code...
-    echo.
-    call npm install -g @anthropic-ai/claude-code
+    REM Refresh PATH so we can find claude
+    set "PATH=%LOCALAPPDATA%\Programs\claude-code;%USERPROFILE%\.claude\bin;%PATH%"
 
     where claude >nul 2>&1
     if errorlevel 1 (
+        REM Try 2: npm fallback (if user has Node.js)
+        where npm >nul 2>&1
+        if not errorlevel 1 (
+            echo.
+            echo  Native installer didn't work. Trying npm...
+            echo.
+            call npm install -g @anthropic-ai/claude-code 2>nul
+        )
+    )
+
+    REM Final check
+    where claude >nul 2>&1
+    if errorlevel 1 (
         echo.
-        echo  [!] Install failed. Try running this in Command Prompt:
-        echo      npm install -g @anthropic-ai/claude-code
+        echo  Could not install Claude Code automatically.
         echo.
-        echo  Then double-click 'Start IRIS' again.
+        echo  Please install it manually:
+        echo  1. Open PowerShell
+        echo  2. Paste: irm https://claude.ai/install.ps1 ^| iex
+        echo  3. Double-click 'Start IRIS' again
+        echo.
+        echo  Or visit: https://claude.ai/download
         echo.
         pause
         exit /b 1
@@ -53,21 +103,10 @@ if errorlevel 1 (
     echo.
 )
 
-REM --- Check Python ---
-python --version >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo  ================================
-    echo  Python is not installed.
-    echo  ================================
-    echo.
-    echo  Download Python from python.org
-    echo  Make sure to check "Add to PATH" during install.
-    echo.
-    start https://python.org
-    pause
-    exit /b 1
-)
+echo  [OK] Git installed
+echo  [OK] Python installed
+echo  [OK] Claude Code installed
+echo.
 
 REM First run? Install first.
 if not exist .env (
@@ -154,8 +193,8 @@ echo  Opening dashboard...
 start http://localhost:5050
 
 REM Open Claude Code in a new Command Prompt window
-echo  Opening IRIS conversation...
-start cmd /k "cd /d "%~dp0" && claude"
+echo  Opening IRIS...
+start cmd /k "cd /d "%~dp0\.." && claude"
 
 echo.
 echo  ================================
