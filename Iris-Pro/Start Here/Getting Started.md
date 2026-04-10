@@ -23,10 +23,12 @@ That's it. IRIS handles the rest.
 
 ## What you'll need
 
-- **A Claude Code subscription** ($20/month from claude.ai)
+- **A Claude account with a subscription** ($20/month from claude.ai) — you'll be asked to log in the first time IRIS launches
 - **A Telegram account** (free — IRIS uses this to check in with you outside the computer)
 
 You don't need to install anything manually. "Start IRIS" checks for everything and either installs it automatically or opens the download page for you. Just follow the prompts.
+
+**Note:** IRIS uses **Claude Code**, which is a developer tool — not the Claude desktop chat app. They're different things. You do NOT need the Claude desktop app. "Start IRIS" installs Claude Code for you automatically. All you need is the account with an active subscription.
 
 ## If something needs to be installed
 
