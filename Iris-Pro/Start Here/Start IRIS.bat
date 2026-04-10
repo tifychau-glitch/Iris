@@ -2,9 +2,58 @@
 REM Start IRIS — double-click this file to launch
 REM Works on Windows. For Mac, use "Start IRIS.command" instead.
 
-cd /d "%~dp0"
+REM Navigate to the Iris-Pro root (one level up from "Start Here\")
+cd /d "%~dp0\.."
 
-REM Check Python is installed
+echo.
+echo  ================================
+echo  IRIS — Starting up
+echo  ================================
+echo.
+
+REM --- Check for Claude Code ---
+where claude >nul 2>&1
+if errorlevel 1 (
+    echo  Claude Code is not installed yet.
+    echo.
+
+    REM Check if Node.js is available
+    where node >nul 2>&1
+    if errorlevel 1 (
+        echo  To install Claude Code, you need Node.js first.
+        echo.
+        echo  Here's what to do:
+        echo  1. Go to nodejs.org ^(opening it now...^)
+        echo  2. Download and install the LTS version
+        echo  3. Double-click 'Start IRIS' again
+        echo.
+        start https://nodejs.org
+        pause
+        exit /b 1
+    )
+
+    echo  Node.js found. Installing Claude Code...
+    echo.
+    call npm install -g @anthropic-ai/claude-code
+
+    where claude >nul 2>&1
+    if errorlevel 1 (
+        echo.
+        echo  [!] Install failed. Try running this in Command Prompt:
+        echo      npm install -g @anthropic-ai/claude-code
+        echo.
+        echo  Then double-click 'Start IRIS' again.
+        echo.
+        pause
+        exit /b 1
+    )
+
+    echo.
+    echo  Claude Code installed!
+    echo.
+)
+
+REM --- Check Python ---
 python --version >nul 2>&1
 if errorlevel 1 (
     echo.
@@ -15,6 +64,7 @@ if errorlevel 1 (
     echo  Download Python from python.org
     echo  Make sure to check "Add to PATH" during install.
     echo.
+    start https://python.org
     pause
     exit /b 1
 )
