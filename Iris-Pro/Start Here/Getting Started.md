@@ -30,6 +30,8 @@ You don't need to install anything manually. "Start IRIS" checks for everything 
 
 **Note:** IRIS uses **Claude Code**, which is a developer tool — not the Claude desktop chat app. They're different things. You do NOT need the Claude desktop app. "Start IRIS" installs Claude Code for you automatically. All you need is the account with an active subscription.
 
+**What it looks like:** IRIS opens in a terminal window (a black or dark window with text). That's normal — that's where you talk to her. Just type your message and press Enter. It's a conversation, not a coding environment. IRIS will greet you and walk you through everything from there.
+
 ## If something needs to be installed
 
 "Start IRIS" checks three things in order. If any are missing, it tries to install them automatically. If auto-install doesn't work, it opens the download page and tells you exactly what to do.
