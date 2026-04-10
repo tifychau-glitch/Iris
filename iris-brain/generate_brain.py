@@ -68,13 +68,15 @@ def recent_daily_logs(limit: int = 3) -> str:
 def build_brain_md() -> str:
     """Compile IRIS-BRAIN.md from source files."""
     business = read(IRIS_PRO / "context" / "my-business.md")
-    tracker = read(IRIS_PRO / "TRACKER.md")
+    tracker = read(IRIS_ROOT / "TRACKER.md")  # TRACKER lives at parent IRIS/ level
     wrestling = read(BRAIN_DIR / "wrestling.md")
     memory = read(IRIS_PRO / "memory" / "MEMORY.md")
+    build_log = read(IRIS_ROOT / "IRIS-BUILD-LOG.md")
 
     in_progress = extract_section(tracker, "In Progress")
     known_bugs = extract_section(tracker, "Known Bugs")
-    phase_1 = extract_section(tracker, r"Phase 1 — MVP \(Current\)")
+    recently_completed = extract_section(tracker, "Recently Completed")[:2000]
+    recent_actions = extract_section(build_log, "Actions")[:2000]
 
     # Strip the wrestling.md intro blockquote
     wrestling_body = re.sub(r"^#.*?\n(>.*?\n)*\n", "", wrestling, count=1, flags=re.DOTALL)
@@ -111,9 +113,10 @@ IRIS is an AI accountability product for solopreneurs. It closes the gap between
 **Iris Pro (runs on customer machine):**
 - Claude Code workspace (`.claude/skills/`, `context/`, `memory/`, `data/`)
 - Local dashboard at `localhost:5050` (Flask + SQLite)
-- 3-tier memory: MEMORY.md → daily logs → mem0/Pinecone (optional, user-owned)
-- 25 skills, 3 subagents, hooks for safety
-- Setup wizard runs on first conversation
+- Obsidian vault as primary memory layer (user-owned second brain at ~/Documents/Iris Vault)
+- Compiler skill promotes raw journal observations → compiled vault knowledge
+- 27 skills, 3 subagents, hooks for safety
+- Setup wizard runs on first conversation, scaffolds vault + starts Telegram + creates scheduled tasks
 
 **Landing page:**
 - Lives in `iris-landing-page/` (separate folder)
@@ -124,8 +127,9 @@ IRIS is an AI accountability product for solopreneurs. It closes the gap between
 **External dependencies:**
 - Lemon Squeezy (payments)
 - Telegram Bot API (Core)
-- Optional: Pinecone, OpenAI, Gmail, Slack (Pro connectors)
+- Optional: Pinecone, OpenAI, Gmail, Slack, Obsidian (Pro connectors)
 - Hostinger VPS (Core hosting)
+- Obsidian (user's vault viewer — not a dependency, just a recommendation)
 
 ---
 
@@ -141,15 +145,21 @@ IRIS is an AI accountability product for solopreneurs. It closes the gap between
 
 ---
 
-## Phase 1 — MVP Roadmap
+## Recently Completed
 
-{phase_1 or "_No Phase 1 items._"}
+{recently_completed or "_No recently completed items._"}
 
 ---
 
 ## Known Bugs
 
 {known_bugs or "_No known bugs._"}
+
+---
+
+## Recent Build Actions (from IRIS-BUILD-LOG.md)
+
+{recent_actions or "_No recent build log entries._"}
 
 ---
 

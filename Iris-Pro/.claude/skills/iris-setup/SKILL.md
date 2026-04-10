@@ -123,20 +123,78 @@ After collecting all answers:
    - Run: `python3 setup_memory.py --user-id "<name>" --upstash-collection "<business>-memory"`
    - If they didn't provide keys, mention: "You can upgrade to advanced memory later by running `python3 setup_memory.py`"
 
-6. **Validation test** — Write a 2-sentence introduction of the user's business in their voice. Ask: "Does this sound like you?" If not, refine the voice guide.
-
-7. **Print capabilities** — Show the user what they can now do:
+6. **Scaffold the vault (their second brain):**
+   ```bash
+   python3 .claude/skills/vault/scripts/vault_init.py ~/Documents/Iris\ Vault
    ```
-   You're all set! Here's what we can do together now:
-
-   - "Research [company/person/topic]" — Deep research on anything
-   - "Write a LinkedIn post about [topic]" — Content in your voice
-   - "Prep for my meeting with [person]" — Research + talking points
-   - "Help with this email: [paste]" — Triage, draft replies
-   - "Add a task: [description]" — Track tasks and projects
-   - "Weekly review" — Review your week and plan the next
-   - "Create a skill for [workflow]" — Build new reusable workflows
+   Then set the path in `.env`:
+   ```bash
+   python3 -c "
+   import sys; sys.path.insert(0, 'dashboard')
+   from app import write_env_value
+   from pathlib import Path
+   write_env_value('IRIS_VAULT_PATH', str(Path.home() / 'Documents' / 'Iris Vault'))
+   "
    ```
+   Then sync the identity files into the vault:
+   ```bash
+   cp context/my-business.md ~/Documents/Iris\ Vault/my-business.md
+   cp context/my-voice.md ~/Documents/Iris\ Vault/my-voice.md
+   cp context/my-mteverest.md ~/Documents/Iris\ Vault/my-everest.md
+   ```
+   Tell the user:
+   > "I've created your vault at ~/Documents/Iris Vault — your second brain.
+   > Everything we just set up is in there. Download Obsidian from obsidian.md,
+   > open that folder, and you'll see your business profile, voice guide, and
+   > north star goal ready to view and edit. Feed it over time — saved articles,
+   > project notes, daily reflections. It compounds."
+
+   Then mention `me.md`:
+   > "There's one file I can't write for you — me.md. That's who you are beyond
+   > your business. Values, how you work, what you want from me. Fill it in when
+   > you have 10 minutes. It makes me better."
+
+7. **Validation test** — Write a 2-sentence introduction of the user's business in their voice. Ask: "Does this sound like you?" If not, refine the voice guide.
+
+8. **Start the Telegram handler:**
+   If both `TELEGRAM_BOT_TOKEN` and `TELEGRAM_USER_ID` are confirmed in `.env`:
+   ```bash
+   python3 .claude/skills/telegram/scripts/telegram_handler.py &
+   ```
+   Tell the user: "I've started the Telegram handler. Try messaging me right now — I should respond." Wait for them to confirm it works. If it fails, don't block — tell them to run `bash start.sh` later.
+
+9. **Create scheduled tasks:**
+   Create the following 5 scheduled tasks using the `create_scheduled_task` MCP tool. Use `durable: true` so they persist across sessions. Use default times (adjust if the user shared wake/sleep info during conversation).
+
+   1. **followup-engine** — cron `"*/30 8-22 * * *"` — prompt: "Run `python3 .claude/skills/iris-accountability-engine/scripts/accountability_engine.py check_due` to find commitments due in the next 30 minutes. If any are due, send a Telegram reminder."
+   2. **eod-summary** — cron `"0 21 * * *"` — prompt: "Run `python3 .claude/skills/iris-accountability-engine/scripts/accountability_engine.py daily_summary` and send the result via Telegram."
+   3. **ghost-detector** — cron `"0 */6 * * *"` — prompt: "Run `python3 .claude/skills/iris-accountability-engine/scripts/accountability_engine.py ghost_check` to see if the user has gone quiet for 6+ hours during waking hours. If so, send a gentle Telegram nudge."
+   4. **missed-task-detector** — cron `"55 23 * * *"` — prompt: "Run `python3 .claude/skills/iris-accountability-engine/scripts/accountability_engine.py missed_tasks` to flag any overdue commitments. Log them but don't message — the EOD summary covers this."
+   5. **task-sync** — cron `"0 7 * * *"` — prompt: "Run `python3 .claude/skills/iris-accountability-engine/scripts/accountability_engine.py sync_tasks` to pull tasks.db into accountability commitments for today."
+
+   Tell the user: "I've set up 5 automated check-ins. You'll hear from me throughout the day."
+
+10. **Close:**
+    ```
+    We're set. Here's what's running:
+
+    - Dashboard at localhost:5050
+    - Telegram handler (message me anytime)
+    - Scheduled check-ins throughout the day
+    - Your vault at ~/Documents/Iris Vault (open in Obsidian)
+
+    What we can do together:
+    - "Research [company/person/topic]" — Deep research on anything
+    - "Write a LinkedIn post about [topic]" — Content in your voice
+    - "Prep for my meeting with [person]" — Research + talking points
+    - "Help with this email: [paste]" — Triage, draft replies
+    - "Add a task: [description]" — Track tasks and projects
+    - "Weekly review" — Review your week and plan the next
+
+    Next time you want IRIS running, just: bash start.sh
+
+    What needs to get done first?
+    ```
 
 ## Script
 
@@ -148,3 +206,6 @@ Use `scripts/init_business.py` for writing the context files in a consistent for
 - If user gives very short answers, ask one follow-up for the most critical info
 - If reconfiguring, back up existing files to `.tmp/` before overwriting
 - If user pastes a very long voice sample, extract the key patterns (don't store the full text)
+- If vault already exists at `~/Documents/Iris Vault` (returning user), skip scaffolding but still sync identity files
+- If Telegram handler fails to start, don't block setup — tell them to run `bash start.sh` later
+- If scheduled task creation fails (e.g., MCP not available), tell user the tasks can be created next session

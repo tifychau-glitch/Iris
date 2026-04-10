@@ -19,7 +19,7 @@ warn() { echo -e "${YELLOW}[!]${RESET} $1"; }
 fail() { echo -e "${RED}[x]${RESET} $1"; exit 1; }
 ok()   { echo -e "    ${DIM}$1${RESET}"; }
 
-TOTAL=8
+TOTAL=10
 
 echo ""
 echo "  ================================"
@@ -189,8 +189,53 @@ EOF
     ok "Created today's log."
 fi
 
-# --- 8. Done ---
-step 8 "Setup complete."
+# --- 8. Configure hooks ---
+step 8 "Configuring hooks..."
+python3 scripts/configure_hooks.py 2>/dev/null || warn "Hook configuration skipped (non-critical)."
+
+# --- 9. Create start.sh ---
+step 9 "Creating start script..."
+cat > start.sh << 'STARTEOF'
+#!/bin/bash
+# Start IRIS — dashboard + Telegram handler
+# Run: bash start.sh
+
+cd "$(dirname "$0")"
+
+echo ""
+echo "  Starting IRIS..."
+echo ""
+
+# Kill any existing processes on port 5050
+lsof -ti:5050 2>/dev/null | xargs kill 2>/dev/null
+
+# Dashboard
+python3 dashboard/app.py &
+DASH_PID=$!
+echo "  Dashboard running at http://localhost:5050 (PID: $DASH_PID)"
+
+# Telegram handler (if token configured)
+if grep -q "^TELEGRAM_BOT_TOKEN=" .env 2>/dev/null && \
+   ! grep -q "^TELEGRAM_BOT_TOKEN=$" .env 2>/dev/null && \
+   ! grep -q '^TELEGRAM_BOT_TOKEN=""' .env 2>/dev/null; then
+    python3 .claude/skills/telegram/scripts/telegram_handler.py &
+    TG_PID=$!
+    echo "  Telegram handler running (PID: $TG_PID)"
+else
+    echo "  Telegram not configured — skipping handler."
+    echo "  Connect via dashboard Settings, then restart."
+fi
+
+echo ""
+echo "  IRIS is running. Press Ctrl+C to stop."
+echo ""
+wait
+STARTEOF
+chmod +x start.sh
+ok "Created start.sh"
+
+# --- 10. Done ---
+step 10 "Setup complete."
 
 echo ""
 echo "  ================================"
@@ -199,8 +244,8 @@ echo "  ================================"
 echo ""
 echo "  Next steps:"
 echo ""
-echo "  1. Start the dashboard:"
-echo "     python3 dashboard/app.py"
+echo "  1. Start IRIS:"
+echo "     bash start.sh"
 echo ""
 echo "  2. Open in your browser:"
 echo "     http://localhost:5050"
@@ -208,35 +253,18 @@ echo ""
 echo "  3. Set a password, then connect your"
 echo "     integrations in Settings."
 echo ""
-echo "  4. Start IRIS:"
+echo "  4. Open Claude Code:"
 echo "     claude"
 echo ""
 echo "  ================================"
 echo ""
 
-# Auto-launch dashboard if not already running
+# Auto-launch if not already running
 if ! lsof -ti:5050 &>/dev/null 2>&1; then
-    read -p "  Start the dashboard now? [Y/n] " -n 1 -r
+    read -p "  Start IRIS now? [Y/n] " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
         echo ""
-        echo "  Starting dashboard..."
-        python3 dashboard/app.py &
-        DASH_PID=$!
-        sleep 2
-
-        # Open browser
-        if command -v open &>/dev/null; then
-            open "http://localhost:5050/setup"
-        elif command -v xdg-open &>/dev/null; then
-            xdg-open "http://localhost:5050/setup"
-        else
-            echo "  Open http://localhost:5050 in your browser."
-        fi
-
-        echo "  Dashboard running (PID: $DASH_PID)"
-        echo "  Press Ctrl+C to stop."
-        echo ""
-        wait $DASH_PID
+        bash start.sh
     fi
 fi
