@@ -1,4 +1,10 @@
-# Skill: Telegram Bot
+---
+name: telegram
+description: Route Telegram messages to Claude Code with persistent memory (mem0 + Upstash Vector)
+user-invocable: false
+---
+
+# Telegram Bot
 
 Route Telegram messages to Claude Code with persistent memory (mem0 + Upstash Vector).
 
