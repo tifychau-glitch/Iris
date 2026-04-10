@@ -30,18 +30,19 @@ You don't need to install anything manually. "Start IRIS" checks for everything 
 
 ## If something needs to be installed
 
-"Start IRIS" checks three things in order. If any are missing, it helps you install them:
+"Start IRIS" checks three things in order. If any are missing, it tries to install them automatically. If auto-install doesn't work, it opens the download page and tells you exactly what to do.
 
-1. **Git** — Mac usually has it. Windows doesn't — the installer opens the download page and tells you to restart your computer after.
-2. **Python** — Mac usually has it. Windows users may need to download it — make sure to check "Add to PATH" during the install.
-3. **Claude Code** — installed automatically (no action needed from you). Uses the native installer from Anthropic, falls back to npm if needed.
+1. **Git** — Mac usually has it. On Windows, IRIS tries to install it automatically. If it can't, it opens the download page. Use all default settings and restart your computer after.
+2. **Python** — Mac usually has it. On Windows, IRIS tries to install it automatically. If it can't, it opens the download page. **The most important thing: on the first screen of the Python installer, check the box at the bottom that says "Add python.exe to PATH."** If you miss this, IRIS can't find Python even though it's installed. At the end of the installer, click "Disable path length limit" if it appears — that's safe and prevents issues later.
+3. **Claude Code** — installed automatically (no action needed from you). Uses the native installer from Anthropic.
 
 After installing anything, just double-click "Start IRIS" again. It picks up where it left off.
 
 ## If something goes wrong
 
-- **"Git is not installed"** — Download from the page that opens, install, restart your computer, try again.
-- **"Python is not installed"** — Download from the page that opens. Check "Add to PATH". Try again.
+- **"Git is not installed"** — Download from the page that opens, install with default settings, restart your computer, try again.
+- **"Python is not installed"** — Download from the page that opens. **Check "Add to PATH"** on the first screen. Click "Disable path length limit" at the end. Try again.
+- **Python is installed but IRIS says it's not** — You probably missed the "Add to PATH" checkbox. Uninstall Python, reinstall, and this time check that box on the first screen.
 - **"Could not install Claude Code"** — Follow the manual instructions shown on screen, or visit claude.ai/download.
 - **Dashboard won't open** — Try going to http://localhost:5050 in your browser manually.
 - **Telegram isn't responding** — Make sure you completed the Telegram setup in the dashboard Settings page.

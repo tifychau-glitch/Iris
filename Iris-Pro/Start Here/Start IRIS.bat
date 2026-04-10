@@ -18,8 +18,30 @@ where git >nul 2>&1
 if errorlevel 1 (
     echo  Git is not installed. Claude Code needs it to run.
     echo.
-    echo  Here's what to do:
-    echo  1. Download Git ^(opening the page now...^)
+
+    REM Try 1: Auto-install via winget (built into Windows 10/11)
+    where winget >nul 2>&1
+    if not errorlevel 1 (
+        echo  Installing Git automatically...
+        echo.
+        winget install Git.Git --accept-package-agreements --accept-source-agreements 2>nul
+
+        REM Refresh PATH
+        set "PATH=%ProgramFiles%\Git\cmd;%PATH%"
+
+        where git >nul 2>&1
+        if not errorlevel 1 (
+            echo.
+            echo  Git installed!
+            echo.
+            goto :git_ok
+        )
+    )
+
+    REM Try 2: Manual install (winget not available or failed)
+    echo  Please install Git manually:
+    echo.
+    echo  1. A download page is opening now...
     echo  2. Run the installer — use all the default settings
     echo  3. IMPORTANT: Restart your computer after installing
     echo  4. Double-click 'Start IRIS' again
@@ -31,6 +53,7 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
+:git_ok
 
 REM ---------------------------------------------------------------
 REM Step 2: Check for Python
@@ -39,19 +62,50 @@ python --version >nul 2>&1
 if errorlevel 1 (
     echo  Python is not installed. IRIS needs it to run.
     echo.
-    echo  Here's what to do:
-    echo  1. Download Python ^(opening the page now...^)
-    echo  2. Run the installer
-    echo  3. IMPORTANT: Check the box that says "Add to PATH"
-    echo  4. Double-click 'Start IRIS' again
+
+    REM Try 1: Auto-install via winget (built into Windows 10/11)
+    where winget >nul 2>&1
+    if not errorlevel 1 (
+        echo  Installing Python automatically...
+        echo.
+        winget install Python.Python.3.11 --accept-package-agreements --accept-source-agreements 2>nul
+
+        REM Refresh PATH
+        set "PATH=%LOCALAPPDATA%\Programs\Python\Python311;%LOCALAPPDATA%\Programs\Python\Python311\Scripts;%PATH%"
+
+        python --version >nul 2>&1
+        if not errorlevel 1 (
+            echo.
+            echo  Python installed!
+            echo.
+            goto :python_ok
+        )
+    )
+
+    REM Try 2: Manual install (winget not available or failed)
+    echo  Please install Python manually:
     echo.
-    start https://python.org
+    echo  1. A download page is opening now...
+    echo  2. Click "Download Python"
+    echo  3. Run the installer
+    echo.
+    echo     *** IMPORTANT ***
+    echo     On the FIRST screen, check the box at the bottom
+    echo     that says "Add python.exe to PATH"
+    echo     If you miss this, IRIS won't be able to find Python.
+    echo.
+    echo  4. At the END of the installer, click
+    echo     "Disable path length limit" if it appears
+    echo  5. Double-click 'Start IRIS' again
+    echo.
+    start https://python.org/downloads
     echo  After installing Python, come back and
     echo  double-click 'Start IRIS' again.
     echo.
     pause
     exit /b 1
 )
+:python_ok
 
 REM ---------------------------------------------------------------
 REM Step 3: Check for Claude Code
