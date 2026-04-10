@@ -103,12 +103,17 @@ REM Open browser
 echo  Opening dashboard...
 start http://localhost:5050
 
+REM Open Claude Code in a new Command Prompt window
+echo  Opening IRIS conversation...
+start cmd /k "cd /d "%~dp0" && claude"
+
 echo.
 echo  ================================
 echo  IRIS is running.
 echo  ================================
 echo.
 echo  Dashboard: http://localhost:5050
-echo  Close this window to stop IRIS.
+echo  IRIS conversation opened in a new window.
+echo  Close this window to stop background services.
 echo.
 pause
