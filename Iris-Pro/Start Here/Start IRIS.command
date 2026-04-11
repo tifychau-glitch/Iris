@@ -107,10 +107,21 @@ echo ""
 # ---------------------------------------------------------------
 # Step 4: First run — install IRIS
 # ---------------------------------------------------------------
-if [ ! -f .env ]; then
+if [ ! -f .iris-installed ]; then
     echo "  First time? Setting things up..."
     echo ""
+    # Ensure .env exists
+    if [ ! -f .env ]; then
+        if [ -f .env.example ]; then
+            cp .env.example .env
+            echo "  Created .env from template."
+        else
+            touch .env
+            echo "  Created empty .env file."
+        fi
+    fi
     bash install.sh
+    echo "installed" > .iris-installed
 fi
 
 # ---------------------------------------------------------------
@@ -126,9 +137,31 @@ else
 fi
 
 # ---------------------------------------------------------------
-# Step 6: Open Claude Code in a new Terminal window
+# Step 6: Open Claude Code
 # ---------------------------------------------------------------
 echo ""
 echo "  Opening IRIS..."
 echo ""
-osascript -e "tell application \"Terminal\" to do script \"cd '$IRIS_DIR' && claude\""
+
+# Prefer Claude desktop app (cleaner chat UI) over terminal
+if [ -d "/Applications/Claude.app" ]; then
+    open -a "Claude"
+    echo ""
+    echo "  ================================"
+    echo "  Claude is opening."
+    echo "  ================================"
+    echo ""
+    echo "  To talk to IRIS:"
+    echo "  1. Click the 'Code' tab in Claude"
+    echo "  2. Set Environment to 'Local'"
+    echo "  3. Select this folder as your project:"
+    echo "     $IRIS_DIR"
+    echo "  4. Type your first message and press Enter"
+    echo ""
+    echo "  (You only need to select the folder once —"
+    echo "   Claude remembers it for next time.)"
+    echo ""
+else
+    # No desktop app — fall back to terminal
+    osascript -e "tell application \"Terminal\" to do script \"cd '$IRIS_DIR' && claude\""
+fi

@@ -163,10 +163,11 @@ echo  [OK] Claude Code installed
 echo.
 
 REM First run? Install first.
-if not exist .env (
+REM Use a marker file — .env may already exist from the template
+if not exist .iris-installed (
     echo.
     echo  ================================
-    echo  First time? Let's set up IRIS.
+    echo  First time? Setting up IRIS...
     echo  ================================
     echo.
 
@@ -185,13 +186,15 @@ if not exist .env (
         python -m pip install --quiet --user flask python-dotenv pyyaml requests python-telegram-bot
     )
 
-    REM Create .env from template
-    if exist .env.example (
-        copy .env.example .env >nul
-        echo  Created .env from template.
-    ) else (
-        echo. > .env
-        echo  Created empty .env file.
+    REM Ensure .env exists (create from template if missing)
+    if not exist .env (
+        if exist .env.example (
+            copy .env.example .env >nul
+            echo  Created .env from template.
+        ) else (
+            echo. > .env
+            echo  Created empty .env file.
+        )
     )
 
     REM Initialize databases
@@ -218,6 +221,9 @@ if not exist .env (
         echo ## Events ^& Notes >> "memory\logs\%TODAY%.md"
         echo  Created today's log.
     )
+
+    REM Mark setup as complete
+    echo installed> .iris-installed
 
     echo.
     echo  ================================
@@ -246,9 +252,31 @@ REM Open browser
 echo  Opening dashboard...
 start http://localhost:5050
 
-REM Open Claude Code in a new Command Prompt window
+REM Open Claude Code
 echo  Opening IRIS...
-start cmd /k "cd /d "%~dp0\.." && claude"
+
+REM Prefer Claude desktop app (cleaner chat UI) over terminal
+if exist "%LOCALAPPDATA%\Programs\claude-desktop\Claude.exe" (
+    start "" "%LOCALAPPDATA%\Programs\claude-desktop\Claude.exe"
+    echo.
+    echo  ================================
+    echo  Claude is opening.
+    echo  ================================
+    echo.
+    echo  To talk to IRIS:
+    echo  1. Click the 'Code' tab in Claude
+    echo  2. Set Environment to 'Local'
+    echo  3. Select this folder as your project:
+    echo     %cd%
+    echo  4. Type your first message and press Enter
+    echo.
+    echo  ^(You only need to select the folder once --
+    echo   Claude remembers it for next time.^)
+    echo.
+) else (
+    REM No desktop app -- fall back to terminal
+    start cmd /k "cd /d "%~dp0\.." && claude"
+)
 
 echo.
 echo  ================================
@@ -256,7 +284,6 @@ echo  IRIS is running.
 echo  ================================
 echo.
 echo  Dashboard: http://localhost:5050
-echo  IRIS conversation opened in a new window.
 echo  Close this window to stop background services.
 echo.
 pause

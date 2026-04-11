@@ -30,7 +30,11 @@ You don't need to install anything manually. "Start IRIS" checks for everything 
 
 **Note:** IRIS uses **Claude Code**, which is a developer tool — not the Claude desktop chat app. They're different things. You do NOT need the Claude desktop app. "Start IRIS" installs Claude Code for you automatically. All you need is the account with an active subscription.
 
-**What it looks like:** IRIS opens in a terminal window (a black or dark window with text). That's normal — that's where you talk to her. Just type your message and press Enter. It's a conversation, not a coding environment. IRIS will greet you and walk you through everything from there.
+**What it looks like:** If you have the Claude desktop app installed, "Start IRIS" opens it for you. Click the **Code** tab, set Environment to **Local**, and select the Iris-Pro folder as your project. You only do this once — Claude remembers it next time.
+
+If you don't have the desktop app, IRIS opens in a terminal window instead (a black or dark window with text). That works too — just type and press Enter. Either way, IRIS greets you and walks you through setup from there.
+
+**Recommended:** Download the Claude desktop app from [claude.ai/download](https://claude.ai/download) for the best experience. It's a proper chat interface instead of a terminal.
 
 ## If something needs to be installed
 
