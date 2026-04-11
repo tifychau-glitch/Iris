@@ -385,7 +385,6 @@
     <div id="modalFields"></div>
     <div class="test-result" id="testResult"></div>
     <div class="modal-actions">
-      <button class="conn-btn conn-btn-test" id="testBtn" onclick="testConnector()">Test Connection</button>
       <button class="conn-btn conn-btn-ghost" onclick="closeModal()">Cancel</button>
       <button class="conn-btn conn-btn-primary" id="saveBtn" onclick="saveConnector()">Save</button>
     </div>
@@ -479,29 +478,27 @@ function cardHTML(c) {
     return `<span class="field-pill ${isSet ? 'set' : ''}">${f.label}</span>`;
   }).join('');
 
-  // status_only connectors (like Claude Code) show no buttons — already connected by design
+  // status_only: no buttons (Claude Code — always connected)
+  // connected: Update + Disconnect (no separate Test — auto-tests on Save)
+  // not connected: Connect
   const actions = c.status_only
     ? ''
     : isConnected
-      ? `<button class="conn-btn conn-btn-test" onclick="testSingle('${c.name}')">Test</button>
-         <button class="conn-btn conn-btn-ghost" onclick="openModal('${c.name}')">Update</button>
+      ? `<button class="conn-btn conn-btn-ghost" onclick="openModal('${c.name}')">Update</button>
          <button class="conn-btn conn-btn-danger" onclick="disconnectConnector('${c.name}')">Disconnect</button>`
       : `<button class="conn-btn conn-btn-primary" onclick="openModal('${c.name}')">Connect</button>`;
 
-  const verified = c.last_verified
-    ? `<span style="font-size:10px;color:#444;margin-left:6px;">${timeAgo(c.last_verified)}</span>`
-    : '';
+  // Description goes in a tooltip on hover, not visible text
+  const desc = c.description ? ` title="${esc(c.description)}"` : '';
 
   return `
-    <div class="connector-card">
+    <div class="connector-card"${desc}>
       <div class="connector-icon">${getIcon(c.name)}</div>
       <div class="connector-info">
         <div class="connector-top">
           <span class="connector-name">${esc(c.display_name)}</span>
           <span class="connector-badge ${badgeClass}">${badgeText}</span>
-          ${verified}
         </div>
-        <div class="connector-desc">${esc(c.description || '')}</div>
         ${fieldPills ? `<div class="connector-fields">${fieldPills}</div>` : ''}
       </div>
       <div class="connector-actions">${actions}</div>
@@ -579,9 +576,25 @@ async function saveConnector() {
     });
     const result = await res.json();
     if (result.success) {
-      closeModal();
-      fetchConnectors();
-      fetchStatus();
+      // Auto-test after save — user shouldn't have to click Test separately
+      showTestResult('Saved. Testing connection...', 'loading');
+      try {
+        const testRes = await fetch(`/api/connectors/${currentConnector.name}/test`, { method: 'POST' });
+        const testResult = await testRes.json();
+        if (testResult.success) {
+          showTestResult(testResult.message || 'Connected!', 'success');
+          setTimeout(() => { closeModal(); fetchConnectors(); fetchStatus(); }, 1500);
+        } else {
+          showTestResult(testResult.error || 'Test failed — check your credentials', 'error');
+          fetchConnectors();
+          fetchStatus();
+        }
+      } catch (te) {
+        // Test endpoint might not exist for this connector — that's OK, just close
+        closeModal();
+        fetchConnectors();
+        fetchStatus();
+      }
     } else {
       showTestResult(result.error || 'Failed to save', 'error');
     }
