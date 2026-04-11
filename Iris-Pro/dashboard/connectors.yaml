@@ -6,23 +6,23 @@ connectors:
     display_name: Claude Code
     category: ai
     required: true
-    description: "AI reasoning engine (subscription-based)"
+    description: "Already connected — you logged in when IRIS started"
     fields: []
-    test_command: "claude --version"
+    status_only: true
 
   - name: telegram
     display_name: Telegram
     category: communication
     required: true
-    description: "Message users via Telegram bot"
+    description: "How IRIS reaches you outside this window"
     fields:
       - key: TELEGRAM_BOT_TOKEN
         label: Bot Token
-        hint: "Get from @BotFather in Telegram"
+        hint: "From @BotFather on Telegram"
         sensitive: true
       - key: TELEGRAM_USER_ID
         label: Your User ID
-        hint: "Message @userinfobot on Telegram to get your numeric ID"
+        hint: "Message @userinfobot to get it"
         sensitive: false
     test_script: test_telegram.py
 
@@ -30,7 +30,7 @@ connectors:
     display_name: Gmail
     category: communication
     required: false
-    description: "Send emails via Gmail SMTP"
+    description: "Send emails through your Gmail"
     fields:
       - key: SMTP_USER
         label: Gmail Address
@@ -38,7 +38,7 @@ connectors:
         sensitive: false
       - key: SMTP_PASSWORD
         label: App Password
-        hint: "Generate at myaccount.google.com/apppasswords"
+        hint: "From myaccount.google.com/apppasswords"
         sensitive: true
     test_script: test_gmail.py
 
@@ -46,11 +46,11 @@ connectors:
     display_name: Obsidian Vault
     category: memory
     required: false
-    description: "Your second brain. IRIS creates a vault folder for you automatically."
+    description: "Your second brain — IRIS creates it for you"
     fields:
       - key: IRIS_VAULT_PATH
         label: Vault Folder
-        hint: "Leave blank — IRIS picks a default location for you"
+        hint: "Leave blank for default"
         sensitive: false
     test_script: test_obsidian_vault.py
 
@@ -58,15 +58,15 @@ connectors:
     display_name: Pinecone
     category: memory
     required: false
-    description: "Long-term vector memory for cross-session recall (optional — you own the data)"
+    description: "Long-term memory across sessions (optional)"
     fields:
       - key: PINECONE_API_KEY
         label: API Key
-        hint: "From app.pinecone.io — go to API Keys in the left sidebar"
+        hint: "From app.pinecone.io"
         sensitive: true
       - key: PINECONE_INDEX_NAME
         label: Index Name
-        hint: "The name of the index you created in Pinecone"
+        hint: "Your Pinecone index name"
         sensitive: false
     test_script: test_pinecone.py
 
@@ -74,11 +74,11 @@ connectors:
     display_name: OpenAI
     category: ai
     required: false
-    description: "Used by mem0 for embeddings (~$0.50/mo)"
+    description: "Powers memory embeddings (~$0.50/mo)"
     fields:
       - key: OPENAI_API_KEY
         label: API Key
-        hint: "From platform.openai.com — starts with sk-"
+        hint: "From platform.openai.com"
         sensitive: true
     test_script: test_openai.py
 
@@ -94,7 +94,7 @@ connectors:
         sensitive: true
       - key: SLACK_CHANNEL_ID
         label: Channel ID
-        hint: "Right-click channel > View channel details > copy ID"
+        hint: "Right-click channel > copy ID"
         sensitive: false
     test_script: test_slack.py
 
@@ -102,11 +102,11 @@ connectors:
     display_name: Anthropic
     category: ai
     required: false
-    description: "Direct Anthropic API access (if AI_PROVIDER=anthropic)"
+    description: "Direct API access (if not using Claude Code)"
     fields:
       - key: ANTHROPIC_API_KEY
         label: API Key
-        hint: "From console.anthropic.com — starts with sk-ant-"
+        hint: "From console.anthropic.com"
         sensitive: true
     test_script: test_anthropic.py
 
@@ -118,6 +118,6 @@ connectors:
     fields:
       - key: AUPHONIC_API_KEY
         label: API Key
-        hint: "From auphonic.com/engine/account"
+        hint: "From auphonic.com"
         sensitive: true
     test_script: test_auphonic.py

@@ -479,11 +479,14 @@ function cardHTML(c) {
     return `<span class="field-pill ${isSet ? 'set' : ''}">${f.label}</span>`;
   }).join('');
 
-  const actions = isConnected
-    ? `<button class="conn-btn conn-btn-test" onclick="testSingle('${c.name}')">Test</button>
-       <button class="conn-btn conn-btn-ghost" onclick="openModal('${c.name}')">Update</button>
-       <button class="conn-btn conn-btn-danger" onclick="disconnectConnector('${c.name}')">Disconnect</button>`
-    : `<button class="conn-btn conn-btn-primary" onclick="openModal('${c.name}')">Connect</button>`;
+  // status_only connectors (like Claude Code) show no buttons — already connected by design
+  const actions = c.status_only
+    ? ''
+    : isConnected
+      ? `<button class="conn-btn conn-btn-test" onclick="testSingle('${c.name}')">Test</button>
+         <button class="conn-btn conn-btn-ghost" onclick="openModal('${c.name}')">Update</button>
+         <button class="conn-btn conn-btn-danger" onclick="disconnectConnector('${c.name}')">Disconnect</button>`
+      : `<button class="conn-btn conn-btn-primary" onclick="openModal('${c.name}')">Connect</button>`;
 
   const verified = c.last_verified
     ? `<span style="font-size:10px;color:#444;margin-left:6px;">${timeAgo(c.last_verified)}</span>`
