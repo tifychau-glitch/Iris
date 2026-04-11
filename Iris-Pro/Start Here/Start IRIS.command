@@ -102,10 +102,28 @@ fi
 echo "  ✓ Git installed"
 echo "  ✓ Python installed"
 echo "  ✓ Claude Code installed"
+
+# ---------------------------------------------------------------
+# Step 4: Check Python dependencies (Flask, etc.)
+# ---------------------------------------------------------------
+if ! python3 -c "import flask" &>/dev/null; then
+    echo ""
+    echo "  Installing Python dependencies..."
+    python3 -m pip install --quiet flask python-dotenv pyyaml requests python-telegram-bot 2>/dev/null || \
+    python3 -m pip install --quiet --user flask python-dotenv pyyaml requests python-telegram-bot 2>/dev/null
+    if python3 -c "import flask" &>/dev/null; then
+        echo "  ✓ Dependencies installed"
+    else
+        echo "  [!] Could not install Flask. The dashboard may not start."
+        echo "  Try running: python3 -m pip install flask"
+    fi
+else
+    echo "  ✓ Dependencies installed"
+fi
 echo ""
 
 # ---------------------------------------------------------------
-# Step 4: First run — install IRIS
+# Step 5: First run — install IRIS
 # ---------------------------------------------------------------
 if [ ! -f .iris-installed ]; then
     echo "  First time? Setting things up..."

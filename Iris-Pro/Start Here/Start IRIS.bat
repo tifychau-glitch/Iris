@@ -160,6 +160,28 @@ if errorlevel 1 (
 echo  [OK] Git installed
 echo  [OK] Python installed
 echo  [OK] Claude Code installed
+
+REM ---------------------------------------------------------------
+REM Step 4: Check Python dependencies (Flask, etc.)
+REM ---------------------------------------------------------------
+python -c "import flask" >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo  Installing Python dependencies...
+    python -m pip install --quiet flask python-dotenv pyyaml requests python-telegram-bot 2>nul
+    if errorlevel 1 (
+        python -m pip install --quiet --user flask python-dotenv pyyaml requests python-telegram-bot 2>nul
+    )
+    python -c "import flask" >nul 2>&1
+    if errorlevel 1 (
+        echo  [!] Could not install Flask. The dashboard may not start.
+        echo  Try running: python -m pip install flask
+    ) else (
+        echo  [OK] Dependencies installed
+    )
+) else (
+    echo  [OK] Dependencies installed
+)
 echo.
 
 REM First run? Install first.
