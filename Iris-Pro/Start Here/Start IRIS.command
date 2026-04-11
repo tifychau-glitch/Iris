@@ -143,43 +143,57 @@ if [ ! -f .iris-installed ]; then
 fi
 
 # ---------------------------------------------------------------
-# Step 5: Start background services (dashboard + Telegram)
+# Step 5: Start dashboard + Telegram in background
 # ---------------------------------------------------------------
-if [ -f start.sh ]; then
-    bash start.sh &
-    sleep 3
-else
-    echo "  start.sh not found — running installer..."
-    echo ""
-    bash install.sh
+
+# Kill any existing dashboard on port 5050
+lsof -ti:5050 2>/dev/null | xargs kill 2>/dev/null
+
+# Start dashboard
+python3 dashboard/app.py &
+echo "  ✓ Dashboard starting..."
+
+# Start Telegram handler if configured
+if grep -q "^TELEGRAM_BOT_TOKEN=" .env 2>/dev/null && \
+   ! grep -q "^TELEGRAM_BOT_TOKEN=$" .env 2>/dev/null && \
+   ! grep -q '^TELEGRAM_BOT_TOKEN=""' .env 2>/dev/null; then
+    python3 .claude/skills/telegram/scripts/telegram_handler.py &
+    echo "  ✓ Telegram handler starting..."
 fi
+
+# Wait for dashboard to be ready, then open browser
+sleep 2
+open "http://localhost:5050"
+echo "  ✓ Dashboard opened in browser"
 
 # ---------------------------------------------------------------
 # Step 6: Open Claude Code
 # ---------------------------------------------------------------
-echo ""
-echo "  Opening IRIS..."
-echo ""
 
 # Prefer Claude desktop app (cleaner chat UI) over terminal
 if [ -d "/Applications/Claude.app" ]; then
     open -a "Claude"
     echo ""
     echo "  ================================"
-    echo "  Claude is opening."
+    echo "  IRIS is ready."
     echo "  ================================"
     echo ""
-    echo "  To talk to IRIS:"
-    echo "  1. Click the 'Code' tab in Claude"
-    echo "  2. Set Environment to 'Local'"
-    echo "  3. Select this folder as your project:"
-    echo "     $IRIS_DIR"
-    echo "  4. Type your first message and press Enter"
+    echo "  The dashboard opened in your browser."
+    echo "  Claude is opening — click the Code tab,"
+    echo "  select this folder as your project:"
+    echo "    $IRIS_DIR"
     echo ""
-    echo "  (You only need to select the folder once —"
-    echo "   Claude remembers it for next time.)"
+    echo "  Then type your first message to IRIS."
     echo ""
 else
-    # No desktop app — fall back to terminal
+    # No desktop app — open Claude Code in a new Terminal window
     osascript -e "tell application \"Terminal\" to do script \"cd '$IRIS_DIR' && claude\""
+    echo ""
+    echo "  ================================"
+    echo "  IRIS is ready."
+    echo "  ================================"
+    echo ""
+    echo "  Dashboard: http://localhost:5050"
+    echo "  IRIS conversation opened in a new window."
+    echo ""
 fi
