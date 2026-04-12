@@ -1,6 +1,6 @@
 # IRIS Project Tracker
 
-> Last updated: 2026-04-10
+> Last updated: 2026-04-11
 
 ---
 
@@ -102,6 +102,7 @@
 
 ## Recently Completed
 
+- [x] **Landing page redesign: single-tier premium positioning** — Replaced 4-tier model with single Iris ($1,497 one-time). Founder-focused audience targeting. Core strategy: pattern detection system ("she sees the gap between what you say and do"). Credentials from mechanism specificity + founder lived experience + 30-day guarantee, not testimonials. Sections redesigned: founder story (Why I Built This), pain mirror (visibility insight), pricing (cost-of-inaction anchored), features (mechanism-focused), FAQ (7 founder objections), CTA (calm/confident), footer (observer positioning). Tone consistent, repetition reinforcing, audience narrowing intentional. Critical pass complete: conversion-ready with optional refinement (trim 1-2 pricing sentences). 3 commits. `#marketing` `#landing-page` (completed 2026-04-11)
 - [x] **Phase 3a: Compiler skill MVP shipped** — `compile.py` reads journal (via iris-journal subprocess) + vault identity, calls LLM via `ai_provider`, stores proposals in `data/compiler_proposals.db`. `review.py` CLI handles list/show/approve/reject/apply. Types: `new_concept`, `append_to_effort`, `observation`. Trust contract enforced at 3 layers. Validated end-to-end with real LLM — produced "Real-Person Gate" concept from 7 synthetic friction entries, correctly cited journal + vault sources `#memory` `#accountability` `#skills` (completed 2026-04-09)
 - [x] **Phase 2: vault_context.py + IRIS.md startup instructions** — IRIS reads `index.md` + 4 identity files + `maps/iris-rules.md` + most recent Calendar entry at every returning-user conversation. Graceful fallback when vault not configured. No hook — explicit invocation documented in IRIS.md `#memory` `#core` (completed 2026-04-09)
 - [x] **Phase 1: Obsidian vault foundation** — `vault` skill with `vault_lib.py` (read/write/append-to-section/list), `vault_init.py` (scaffold), `vault_read.py`/`vault_write.py` (CLI). 8 starter templates with guidance prompts. Dashboard "Obsidian Vault" connector card. `CLAUDE.md` → `IRIS.md` rename with 1-line pointer. 5 `_find_project_root()` sentinels updated. Path traversal blocked, append-only trust contract, symlink escapes caught `#memory` `#dashboard` `#onboarding` (completed 2026-04-09)
