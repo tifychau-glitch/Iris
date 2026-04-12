@@ -545,14 +545,14 @@ Built in `.claude/skills/memory/scripts/ranking.py`, wired into `tiered_search()
 - [ ] Surface flagged pages in review queue
 - [ ] Block retrieval citation of flagged pages until resolved
 
-### Phase 6 — Pruning Loop
+### Phase 7 — Pruning Loop
 - [ ] Build stale detection (90-day wiki, 180-day index)
 - [ ] Build duplicate similarity check
 - [ ] Build promotion candidate detection
 - [ ] Wire to `/memory lint` command
 - [ ] Add human approval gate before any Core State promotion or bulk archive
 
-### Phase 7 — MCPVault Integration (Obsidian bridge)
+### Phase 8 — MCPVault Integration (Obsidian bridge)
 - [ ] Install and configure MCPVault
 - [ ] Verify Claude can read/write `memory/wiki/` via MCP
 - [ ] Confirm frontmatter schema is MCPVault-compatible

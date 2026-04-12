@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "version": 8,
-    "last_updated_at": "2026-04-12T18:28:36.907371+00:00",
-    "last_confirmed_at": "2026-04-12T18:28:36.907371+00:00",
+    "version": 9,
+    "last_updated_at": "2026-04-12T19:12:44.039919+00:00",
+    "last_confirmed_at": "2026-04-12T19:12:44.039919+00:00",
     "source_of_last_write": "user_confirmed",
     "audit_log_ref": "memory/audit-log.jsonl"
   },
@@ -54,7 +54,7 @@
     "project_name": "IRIS Memory System Upgrade",
     "status": "active",
     "priority": 1,
-    "current_phase": "Phase 1 — Core State complete, Phase 2 next",
+    "current_phase": "Phases 1-5 complete — memory architecture shipped",
     "last_touched_at": "2026-04-12T00:00:00+00:00"
   },
   "canonical_business_facts": {
