@@ -4,7 +4,16 @@
     "last_updated_at": "2026-04-12T19:12:44.039919+00:00",
     "last_confirmed_at": "2026-04-12T19:12:44.039919+00:00",
     "source_of_last_write": "user_confirmed",
-    "audit_log_ref": "memory/audit-log.jsonl"
+    "audit_log_ref": "memory/audit-log.jsonl",
+    "_field_timestamps": {
+      "identity": "2026-04-06T00:00:00+00:00",
+      "current_goals": "2026-04-06T00:00:00+00:00",
+      "offer_stack": "2026-04-06T00:00:00+00:00",
+      "tone_preferences": "2026-04-06T00:00:00+00:00",
+      "active_commitments": "2026-04-06T00:00:00+00:00",
+      "active_project_context": "2026-04-12T19:12:44.039919+00:00",
+      "canonical_business_facts": "2026-04-06T00:00:00+00:00"
+    }
   },
   "identity": {
     "name": "Tiffany Chau",

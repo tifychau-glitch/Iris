@@ -206,9 +206,12 @@ _FIELD_SIGNALS: dict[str, list[str]] = {
                                    "the business name", "business is called"],
     "identity.role":              ["my role is", "i'm a ", "i am a "],
     "current_goals.primary":      ["my goal is", "i'm trying to", "my main focus", "my priority is",
-                                   "i want to"],
+                                   "i want to", "my top priority", "i'm focused on",
+                                   "the goal is", "main thing i'm"],
     "offer_stack.products":       ["my price", "i charge", "my offer", "my product",
-                                   "the cost is", "it costs"],
+                                   "the cost is", "it costs", "let's go with $",
+                                   "i should charge", "i'm charging", "bump it to $",
+                                   "one-time", "per month", "monthly fee"],
     "tone_preferences.avoid":     ["don't ever", "never use", "avoid", "don't say", "stop saying"],
     "tone_preferences.writing_voice": ["my writing voice is", "my voice is", "my tone is",
                                        "my style is", "write like"],
@@ -385,7 +388,28 @@ def attempt_promotion(decision: IngestDecision) -> IngestDecision:
     Uses queue_write() so field policies and confirmation gates apply.
     Does NOT write directly — always goes through the Phase 2 gate.
     """
-    if decision.destination != DEST_CORE_STATE:
+    # Wiki destination → write to wiki layer
+    if decision.destination == DEST_WIKI:
+        try:
+            sys.path.insert(0, str(_HERE))
+            import wiki
+            result = wiki.write_page(
+                title=decision.raw_text[:80],
+                content=decision.raw_text,
+                entity_type="synthesis",
+                author_type=decision.source,
+                confidence=decision.confidence,
+                source_ids=[decision.item_id],
+                tags=[decision.classification],
+            )
+            decision.policy_result = f"wiki page {result['status']}: {result['slug']}"
+            decision.final_disposition = "logged"
+        except Exception as e:
+            decision.policy_result = f"wiki write error: {e}"
+            decision.final_disposition = "error"
+        return decision
+
+    if decision.destination not in (DEST_CORE_STATE,):
         decision.final_disposition = "dropped" if decision.destination == DEST_DROP else "logged"
         return decision
 

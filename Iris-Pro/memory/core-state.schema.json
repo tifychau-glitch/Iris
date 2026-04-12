@@ -10,7 +10,7 @@
     "_meta": {
       "type": "object",
       "required": ["version", "last_updated_at", "last_confirmed_at", "source_of_last_write", "audit_log_ref"],
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "version": {
           "type": "integer",
@@ -132,25 +132,37 @@
       }
     },
     "active_project_context": {
-      "type": "object",
-      "required": ["project_name", "status", "priority", "current_phase", "last_touched_at"],
-      "additionalProperties": false,
-      "properties": {
-        "project_name": { "type": "string", "minLength": 1 },
-        "status": {
-          "type": "string",
-          "enum": ["active", "paused", "completed"]
+      "oneOf": [
+        {
+          "type": "object",
+          "description": "Single active project (backward compatible)",
+          "required": ["project_name", "status", "priority", "current_phase", "last_touched_at"],
+          "additionalProperties": false,
+          "properties": {
+            "project_name": { "type": "string", "minLength": 1 },
+            "status": { "type": "string", "enum": ["active", "paused", "completed"] },
+            "priority": { "type": "integer", "minimum": 1 },
+            "current_phase": { "type": "string" },
+            "last_touched_at": { "type": "string", "format": "date-time" }
+          }
         },
-        "priority": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "current_phase": { "type": "string" },
-        "last_touched_at": {
-          "type": "string",
-          "format": "date-time"
+        {
+          "type": "array",
+          "description": "Multiple active projects, sorted by priority (1 = highest)",
+          "items": {
+            "type": "object",
+            "required": ["project_name", "status", "priority", "current_phase", "last_touched_at"],
+            "additionalProperties": false,
+            "properties": {
+              "project_name": { "type": "string", "minLength": 1 },
+              "status": { "type": "string", "enum": ["active", "paused", "completed"] },
+              "priority": { "type": "integer", "minimum": 1 },
+              "current_phase": { "type": "string" },
+              "last_touched_at": { "type": "string", "format": "date-time" }
+            }
+          }
         }
-      }
+      ]
     },
     "canonical_business_facts": {
       "type": "object",

@@ -175,6 +175,7 @@ def _requires_confirmation(policy: dict, source: str, current_value) -> bool:
 def check_staleness(field_path: str, policy: dict = None) -> dict | None:
     """
     Check whether a Core State field has gone stale.
+    Uses per-field timestamps from _meta._field_timestamps (not the global timestamp).
     Returns a staleness dict if stale, None if fresh or no expiry.
     """
     if policy is None:
@@ -186,7 +187,15 @@ def check_staleness(field_path: str, policy: dict = None) -> dict | None:
 
     state = load()
     meta = state.get("_meta", {})
-    confirmed_str = meta.get("last_confirmed_at", "")
+
+    # Per-field timestamp lookup: check exact path, then top-level parent
+    field_ts = meta.get("_field_timestamps", {})
+    top_level = field_path.split(".")[0]
+    confirmed_str = field_ts.get(field_path) or field_ts.get(top_level)
+
+    # Fall back to global timestamp only if no per-field timestamp exists
+    if not confirmed_str:
+        confirmed_str = meta.get("last_confirmed_at", "")
     if not confirmed_str:
         return None
 
@@ -509,8 +518,21 @@ def lookup(field_path: str):
 
 
 def get_active_project() -> dict:
-    """Shortcut: return the active_project_context field."""
-    return lookup("active_project_context") or {}
+    """
+    Shortcut: return the highest-priority active project.
+    Handles both single-object and array formats for backward compatibility.
+    """
+    ctx = lookup("active_project_context")
+    if ctx is None:
+        return {}
+    # Array format: return the first active project by priority
+    if isinstance(ctx, list):
+        active = [p for p in ctx if p.get("status") == "active"]
+        if active:
+            return min(active, key=lambda p: p.get("priority", 999))
+        return ctx[0] if ctx else {}
+    # Single-object format (backward compatible)
+    return ctx
 
 
 # ---------------------------------------------------------------------------
@@ -743,6 +765,14 @@ def write(field_path: str, new_value, source: str, trigger: str,
     if source in ("user_explicit", "user_confirmed"):
         state["_meta"]["last_confirmed_at"] = now
     state["_meta"]["source_of_last_write"] = source
+
+    # Per-field timestamp: record when this specific field was last confirmed.
+    # Stored by top-level field name so staleness checks are field-specific.
+    if source in ("user_explicit", "user_confirmed"):
+        if "_field_timestamps" not in state["_meta"]:
+            state["_meta"]["_field_timestamps"] = {}
+        top_level = field_path.split(".")[0]
+        state["_meta"]["_field_timestamps"][top_level] = now
 
     _save(state)
 
@@ -1015,6 +1045,112 @@ def generate_projection(write_file: bool = False) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Restore from audit log
+# ---------------------------------------------------------------------------
+
+def restore_field(field_path: str) -> dict:
+    """
+    Restore a Core State field to its previous value using the audit log.
+    Scans the audit log for the most recent accepted write to this field
+    and restores the old_value from that entry.
+
+    Returns {"status": "ok", ...} or {"status": "error", "message": ...}
+    """
+    if not AUDIT_LOG_PATH.exists():
+        return {"status": "error", "message": "No audit log found"}
+
+    # Find the most recent accepted write to this field
+    target_entry = None
+    with open(AUDIT_LOG_PATH, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+                if (entry.get("field") == field_path
+                        and entry.get("action") == "write"
+                        and entry.get("disposition", "accepted") == "accepted"
+                        and entry.get("old_value") is not None):
+                    target_entry = entry
+            except json.JSONDecodeError:
+                continue
+
+    if target_entry is None:
+        return {"status": "error",
+                "message": f"No restorable audit entry found for '{field_path}'"}
+
+    old_value = target_entry["old_value"]
+    current_value = lookup(field_path)
+
+    # Write the restoration
+    result = write(
+        field_path=field_path,
+        new_value=old_value,
+        source="user_confirmed",
+        trigger=f"Restored from audit log (entry: {target_entry.get('timestamp')})",
+        confidence=1.0,
+        actor="restore_command",
+        _skip_policy_check=True,
+    )
+
+    return {
+        "status": "ok",
+        "field": field_path,
+        "restored_from": current_value,
+        "restored_to": old_value,
+        "audit_timestamp": target_entry.get("timestamp"),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Pending queue deduplication
+# ---------------------------------------------------------------------------
+
+def dedup_pending() -> dict:
+    """
+    Remove duplicate pending writes for the same field.
+    Keeps only the most recent pending entry per field.
+    Returns {"removed": int, "remaining": int}
+    """
+    if not PENDING_WRITES_PATH.exists():
+        return {"removed": 0, "remaining": 0}
+
+    entries = []
+    with open(PENDING_WRITES_PATH, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+
+    # Keep only the latest pending entry per field
+    seen_fields = {}
+    kept = []
+    for entry in reversed(entries):
+        if entry.get("status") != "pending":
+            kept.append(entry)  # keep all resolved entries
+            continue
+        field = entry.get("field", "")
+        if field not in seen_fields:
+            seen_fields[field] = True
+            kept.append(entry)
+        # else: duplicate pending for same field, skip
+
+    kept.reverse()
+    removed = len(entries) - len(kept)
+
+    with open(PENDING_WRITES_PATH, "w", encoding="utf-8") as f:
+        for entry in kept:
+            f.write(json.dumps(entry, default=str) + "\n")
+
+    return {"removed": removed, "remaining": len(kept)}
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -1060,6 +1196,8 @@ def main():
                         help="Resolve a pending write: --resolve <id> approve|reject")
     parser.add_argument("--project", action="store_true",
                         help="Rebuild MEMORY.md from Core State (deterministic projection)")
+    parser.add_argument("--restore", type=str, metavar="FIELD_PATH",
+                        help="Restore a field to its last known good value from audit log")
     args = parser.parse_args()
 
     if args.get:
@@ -1187,6 +1325,17 @@ def main():
         status = result["status"]
         print(f"{'✓' if status == 'approved' else '✗'} Write {write_id} {status}")
         print(json.dumps(result, indent=2, default=str))
+
+    elif args.restore:
+        result = restore_field(args.restore)
+        if result["status"] == "ok":
+            print(f"✓ Restored '{args.restore}' to previous value")
+            print(f"  Was:     {json.dumps(result['restored_from'], default=str)}")
+            print(f"  Now:     {json.dumps(result['restored_to'], default=str)}")
+            print(f"  Source:  audit entry from {result['audit_timestamp']}")
+        else:
+            print(f"✗ {result['message']}", file=sys.stderr)
+            sys.exit(1)
 
     elif args.project:
         content = generate_projection(write_file=True)
