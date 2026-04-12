@@ -18,16 +18,19 @@ embedder:
     model: "text-embedding-3-small"
     embedding_dims: 1536
 
-# Vector store — Upstash Vector (serverless, free tier, no index pausing)
-# Requires: UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN in .env
-# Setup: Create a Dense index at console.upstash.com with dimension=1536, metric=cosine
+# Vector store — Pinecone (serverless, free tier, one API key, no index pausing)
+# Requires: PINECONE_API_KEY in .env
+# Setup: Create a serverless index at app.pinecone.io
+#   - Index name: iris-memory
+#   - Dimensions: 1536 (matches text-embedding-3-small)
+#   - Metric: cosine
+#   - Cloud: AWS us-east-1 (free tier)
 vector_store:
-  provider: "upstash_vector"
+  provider: "pinecone"
   config:
-    collection_name: "iris-memory"
+    index_name: "iris-memory"
     embedding_model_dims: 1536
-    url: "${UPSTASH_VECTOR_REST_URL}"
-    token: "${UPSTASH_VECTOR_REST_TOKEN}"
+    api_key: "${PINECONE_API_KEY}"
 
 # History database — local SQLite for audit trail
 # NOTE: This relative path is overridden to an absolute path by mem0_client.py at runtime

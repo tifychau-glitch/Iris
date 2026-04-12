@@ -4,11 +4,25 @@ Script: Smart Memory Search
 Purpose: Enhanced retrieval with temporal decay, MMR diversity, and hybrid BM25+vector search.
          Drop-in upgrade over mem0_search.py — same interface, better results.
 
+Retrieval order (per MEMORY-SPEC.md Section 7):
+    1. Core State lookup (deterministic, always first)
+    2. Hybrid search: BM25 + vector fusion with temporal decay + MMR re-ranking
+    3. Trust/freshness ranking via ranking.py (Phase 4)
+
+Phase 4 additions:
+    - Query-type detection (canonical / pattern / history / general)
+    - Trust weights by layer + source
+    - Field-sensitive freshness decay (pricing decays fast, identity never)
+    - Source bonus to prevent relevance from overriding trust for canonical queries
+    - Confidence labels grounded in trust weight + freshness (not raw score)
+
 Usage:
     python .claude/skills/memory/scripts/smart_search.py --query "image generation preferences"
+    python .claude/skills/memory/scripts/smart_search.py --query "what is my pricing"
     python .claude/skills/memory/scripts/smart_search.py --query "API limits" --limit 5
     python .claude/skills/memory/scripts/smart_search.py --query "gpt-4.1-nano" --vector-weight 0.3 --text-weight 0.7
     python .claude/skills/memory/scripts/smart_search.py --rebuild-index
+    python .claude/skills/memory/scripts/smart_search.py --tiered --query "what are my goals"
 """
 
 import argparse
@@ -315,6 +329,147 @@ def smart_search(query, limit=10, vector_weight=DEFAULT_VECTOR_WEIGHT,
 # CLI
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Tiered search (Core State first, then hybrid search)
+# ---------------------------------------------------------------------------
+
+def tiered_search(query: str, limit: int = 10, **kwargs) -> dict:
+    """
+    Full retrieval pipeline per MEMORY-SPEC.md Section 7 with Phase 4 ranking.
+
+    Step 1: Detect query type (canonical / pattern / history / general).
+    Step 2: Check Core State for deterministic match (always runs).
+    Step 3: Fall through to hybrid BM25+vector search if needed.
+    Step 4: Apply trust/freshness ranking via ranking.py.
+
+    Returns extended result format with source, query_type, and ranked results.
+    """
+    # --- Phase 4: import ranking module ---
+    try:
+        from ranking import (
+            detect_query_type, rank_results, confidence_label,
+            preferred_layers, QUERY_TYPE_CANONICAL,
+        )
+        ranking_available = True
+    except ImportError:
+        ranking_available = False
+
+    # --- Step 1: Detect query type ---
+    query_type = detect_query_type(query) if ranking_available else "general"
+
+    # --- Step 2: Core State lookup (deterministic — always checked first) ---
+    try:
+        from core_state import matches_query, get_active_project
+        matched, field_path, value = matches_query(query)
+        if matched:
+            summary = json.dumps(value, ensure_ascii=False, default=str)
+            if len(summary) > 500:
+                summary = summary[:497] + "..."
+
+            core_result = {
+                "id": f"core_state::{field_path}",
+                "memory": summary,
+                "score": 1.0,
+                "layer": "core_state",
+                "source": "user_explicit",  # Core State facts are always user-confirmed
+                "field_path": field_path,
+                "age_days": 0,
+                "trust_class": "core",
+                "debug": {
+                    "source": "core_state",
+                    "field": field_path,
+                    "note": "Deterministic lookup — no search performed",
+                },
+            }
+
+            if ranking_available:
+                ranked = rank_results([core_result], query_type)
+                top = ranked[0]
+                conf_label = confidence_label(top)
+            else:
+                conf_label = "High"
+
+            return {
+                "source": "core_state",
+                "query_type": query_type,
+                "field": field_path,
+                "confidence": "high",
+                "confidence_label": f"{conf_label} — confirmed Core State fact",
+                "results": [core_result],
+            }
+
+        # Inject active project context to bias hybrid search
+        active_project = get_active_project()
+        if active_project.get("project_name"):
+            query = f"{query} [context: {active_project.get('project_name')}]"
+
+    except Exception:
+        pass  # Core State unavailable — continue to hybrid search
+
+    # --- Step 3: Hybrid BM25 + vector search ---
+    raw = smart_search(query, limit=limit, **kwargs)
+    raw_results = raw.get("results", [])
+
+    if not ranking_available or not raw_results:
+        raw["source"] = "hybrid_search"
+        raw["query_type"] = query_type
+        raw["confidence"] = _label_confidence(raw_results)
+        return raw
+
+    # --- Step 4: Apply trust/freshness ranking ---
+    # Annotate hybrid results with layer metadata before ranking.
+    # Hybrid search results come from the retrieval index by default.
+    for r in raw_results:
+        if "layer" not in r:
+            r["layer"] = "retrieval"
+        if "source" not in r:
+            r["source"] = "unknown"
+
+    ranked = rank_results(raw_results, query_type)
+
+    # Rebuild output list in ranked order
+    ranked_output = []
+    for r in ranked:
+        ranked_output.append({
+            "id": r.id,
+            "memory": r.memory,
+            "score": r.final_score,
+            "created_at": r.created_at,
+            "layer": r.layer,
+            "source": r.source,
+            "confidence_label": confidence_label(r),
+            "debug": {
+                **r.debug,
+                "rank": r.rank,
+                "final_score": r.final_score,
+            },
+        })
+
+    top = ranked[0] if ranked else None
+    conf_str = confidence_label(top) if top else "no_results"
+
+    return {
+        "source": "hybrid_search",
+        "query_type": query_type,
+        "confidence": conf_str.lower(),
+        "confidence_label": f"{conf_str} — trust/freshness ranked",
+        "results": ranked_output,
+    }
+
+
+def _label_confidence(results: list) -> str:
+    """Fallback confidence label from raw score (used when ranking module unavailable)."""
+    if not results:
+        return "no_results"
+    top_score = results[0].get("score", 0)
+    if top_score >= 0.85:
+        return "high"
+    elif top_score >= 0.65:
+        return "moderate"
+    else:
+        return "low"
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Smart memory search — temporal decay, MMR diversity, hybrid BM25+vector"
@@ -326,6 +481,8 @@ def main():
     parser.add_argument("--half-life", type=float, default=DEFAULT_HALF_LIFE_DAYS)
     parser.add_argument("--mmr-lambda", type=float, default=DEFAULT_MMR_LAMBDA)
     parser.add_argument("--rebuild-index", action="store_true", help="Rebuild FTS5 index from history DB")
+    parser.add_argument("--tiered", action="store_true",
+                        help="Use tiered retrieval: Core State first, then hybrid search")
     args = parser.parse_args()
 
     if args.rebuild_index:
@@ -336,11 +493,18 @@ def main():
     if not args.query:
         parser.error("--query is required (unless using --rebuild-index)")
 
-    results = smart_search(
-        query=args.query, limit=args.limit,
-        vector_weight=args.vector_weight, text_weight=args.text_weight,
-        half_life_days=args.half_life, mmr_lambda=args.mmr_lambda,
-    )
+    if args.tiered:
+        results = tiered_search(
+            query=args.query, limit=args.limit,
+            vector_weight=args.vector_weight, text_weight=args.text_weight,
+            half_life_days=args.half_life, mmr_lambda=args.mmr_lambda,
+        )
+    else:
+        results = smart_search(
+            query=args.query, limit=args.limit,
+            vector_weight=args.vector_weight, text_weight=args.text_weight,
+            half_life_days=args.half_life, mmr_lambda=args.mmr_lambda,
+        )
     print(json.dumps(results, indent=2, default=str))
 
 

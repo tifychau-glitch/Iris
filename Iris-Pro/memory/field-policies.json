@@ -1,0 +1,131 @@
+{
+  "_comment": "Per-field write policies for IRIS Core State. See MEMORY-SPEC.md Section 4 + Phase 2.",
+  "_confirmation_policy_values": {
+    "never": "No confirmation required. Write proceeds if source is allowed.",
+    "on_change": "Confirmation required only when overwriting an existing non-null value.",
+    "always_if_non_explicit": "Confirmation required unless source is user_explicit.",
+    "always": "Confirmation always required, even for user_explicit writes."
+  },
+  "_overwrite_behavior_values": {
+    "replace": "New value replaces old value directly.",
+    "merge": "New value is merged with existing (used for lists/sets like tone_preferences.avoid).",
+    "archive_then_replace": "Old value is written to audit log before replacement."
+  },
+
+  "identity": {
+    "allowed_sources": ["user_explicit", "user_confirmed"],
+    "overwrite_behavior": "replace",
+    "confirmation_policy": "always_if_non_explicit",
+    "staleness_days": null,
+    "confidence_minimum": 0.95,
+    "notes": "Identity fields almost never change. Highest protection. system_canonical cannot write here."
+  },
+
+  "identity.name": {
+    "allowed_sources": ["user_explicit", "user_confirmed"],
+    "overwrite_behavior": "replace",
+    "confirmation_policy": "always",
+    "staleness_days": null,
+    "confidence_minimum": 0.99,
+    "notes": "Name should almost never change. Requires explicit confirmation always."
+  },
+
+  "identity.business_name": {
+    "allowed_sources": ["user_explicit", "user_confirmed"],
+    "overwrite_behavior": "archive_then_replace",
+    "confirmation_policy": "always",
+    "staleness_days": null,
+    "confidence_minimum": 0.95,
+    "notes": "Business name change is a significant event. Always confirm, always archive old."
+  },
+
+  "current_goals": {
+    "allowed_sources": ["user_explicit", "user_confirmed", "system_canonical"],
+    "overwrite_behavior": "archive_then_replace",
+    "confirmation_policy": "on_change",
+    "staleness_days": 30,
+    "confidence_minimum": 0.7,
+    "notes": "Goals can change often. Archive old value on replacement so history is preserved."
+  },
+
+  "current_goals.primary": {
+    "allowed_sources": ["user_explicit", "user_confirmed", "system_canonical"],
+    "overwrite_behavior": "archive_then_replace",
+    "confirmation_policy": "on_change",
+    "staleness_days": 21,
+    "confidence_minimum": 0.75,
+    "notes": "Primary goal is high-signal. Stale after 21 days. Archive on change."
+  },
+
+  "offer_stack": {
+    "allowed_sources": ["user_explicit", "user_confirmed"],
+    "overwrite_behavior": "replace",
+    "confirmation_policy": "always",
+    "staleness_days": 90,
+    "confidence_minimum": 0.95,
+    "notes": "Pricing is highest-stakes field. Always requires confirmation. system_canonical cannot write."
+  },
+
+  "offer_stack.products": {
+    "allowed_sources": ["user_explicit", "user_confirmed"],
+    "overwrite_behavior": "replace",
+    "confirmation_policy": "always",
+    "staleness_days": 90,
+    "confidence_minimum": 0.95,
+    "notes": "Individual product entries. Same protection as parent offer_stack."
+  },
+
+  "tone_preferences": {
+    "allowed_sources": ["user_explicit", "user_confirmed"],
+    "overwrite_behavior": "replace",
+    "confirmation_policy": "on_change",
+    "staleness_days": null,
+    "confidence_minimum": 0.8,
+    "notes": "Tone is stable. No expiry. system_canonical cannot write."
+  },
+
+  "tone_preferences.avoid": {
+    "allowed_sources": ["user_explicit", "user_confirmed"],
+    "overwrite_behavior": "merge",
+    "confirmation_policy": "on_change",
+    "staleness_days": null,
+    "confidence_minimum": 0.8,
+    "notes": "Avoid list grows over time. Merge (not replace) so items are not accidentally dropped."
+  },
+
+  "active_commitments": {
+    "allowed_sources": ["user_explicit", "user_confirmed", "system_canonical"],
+    "overwrite_behavior": "replace",
+    "confirmation_policy": "on_change",
+    "staleness_days": 14,
+    "confidence_minimum": 0.7,
+    "notes": "Commitments are time-sensitive. Stale after 14 days without update."
+  },
+
+  "active_project_context": {
+    "allowed_sources": ["user_explicit", "user_confirmed", "system_canonical"],
+    "overwrite_behavior": "replace",
+    "confirmation_policy": "on_change",
+    "staleness_days": 14,
+    "confidence_minimum": 0.7,
+    "notes": "Set deliberately, cleared deliberately. Never inferred from recent chat."
+  },
+
+  "canonical_business_facts": {
+    "allowed_sources": ["user_explicit", "user_confirmed", "system_canonical"],
+    "overwrite_behavior": "replace",
+    "confirmation_policy": "on_change",
+    "staleness_days": 180,
+    "confidence_minimum": 0.8,
+    "notes": "Slow-changing facts. Long staleness window."
+  },
+
+  "_default": {
+    "allowed_sources": ["user_explicit", "user_confirmed", "system_canonical"],
+    "overwrite_behavior": "replace",
+    "confirmation_policy": "on_change",
+    "staleness_days": 90,
+    "confidence_minimum": 0.7,
+    "notes": "Default policy applied when no specific policy is defined for a field path."
+  }
+}
