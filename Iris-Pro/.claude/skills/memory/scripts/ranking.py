@@ -457,7 +457,7 @@ GOLDEN_TESTS = [
     (
         "Identity field: no freshness decay regardless of age",
         [_make_result("core_state", age_days=500, field_path="identity.name",
-                      memory="Tiffany")],
+                      memory="Alex")],
         QUERY_TYPE_CANONICAL,
         lambda ranked: ranked[0].freshness_mod == 1.0,
     ),

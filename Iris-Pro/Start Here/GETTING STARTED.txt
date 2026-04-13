@@ -1,0 +1,22 @@
+IRIS — Getting Started
+======================
+
+OPTION 1: Double-click "Start IRIS.command"
+
+  If Mac says it's "damaged" or "can't be opened":
+  1. Right-click "Start IRIS.command"
+  2. Click "Open"
+  3. Click "Open" again in the popup
+
+  This only happens the first time. After that it opens normally.
+
+
+OPTION 2: Terminal (one command)
+
+  Open Terminal and paste:
+
+  cd ~/Downloads/Iris-Pro && bash scripts/start.sh
+
+
+Either way, IRIS will install dependencies, start the dashboard,
+and open Claude Code so you can begin setup.

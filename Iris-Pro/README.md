@@ -67,7 +67,6 @@ A free, open-source template that transforms a Claude Code workspace into a stru
 ```
 iris/
 ├── IRIS.md                      # Kernel — system handbook (CLAUDE.md is a 1-line pointer)
-├── install.sh                   # One-command setup
 ├── .claude/
 │   ├── skills/                  # 25 skills (your programs)
 │   ├── agents/                  # 3 subagents (your workers)
@@ -77,6 +76,7 @@ iris/
 ├── memory/                      # MEMORY.md + daily logs
 ├── data/                        # SQLite databases
 │   └── hooks/                   # Automation hooks
+├── scripts/                     # install.sh, start.sh, setup_memory.py, build-release.sh
 └── docs/                        # Guides and upgrade paths
 ```
 

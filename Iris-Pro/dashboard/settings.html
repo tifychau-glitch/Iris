@@ -594,9 +594,8 @@ async function saveConnector() {
           showTestResult(testResult.message || 'Connected!', 'success');
           setTimeout(() => { closeModal(); fetchConnectors(); fetchStatus(); }, 1500);
         } else {
-          showTestResult(testResult.error || 'Test failed — check your credentials', 'error');
-          fetchConnectors();
-          fetchStatus();
+          showTestResult(testResult.error || 'Saved — but test failed. Check your credentials.', 'error');
+          setTimeout(() => { closeModal(); fetchConnectors(); fetchStatus(); }, 2500);
         }
       } catch (te) {
         // Test endpoint might not exist for this connector — that's OK, just close

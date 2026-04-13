@@ -3,6 +3,9 @@
 credentials.json
 token.json
 
+# First-run marker (created by launcher)
+.iris-installed
+
 # Runtime data
 data/*.db
 data/*.sqlite

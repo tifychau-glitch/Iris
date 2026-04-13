@@ -10,7 +10,7 @@ When making meaningful changes to the IRIS system, update the visual architectur
 - New skill added or removed
 - New MCP connector added or disconnected
 - New database or data store created
-- Dashboard pages or routes added
+- Dashboard settings or connectors changed
 - New external service integrated
 - Build status changes (gray → yellow → green)
 - New automation or hook added

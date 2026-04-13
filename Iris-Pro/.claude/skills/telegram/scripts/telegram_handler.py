@@ -501,19 +501,10 @@ def invoke_claude_streaming(
                 except json.JSONDecodeError:
                     output_text += line + "\n"
 
-            # Periodic progress updates to Telegram
+            # Periodic typing indicator (silent — no message sent)
             elapsed = time.time() - last_update_time
             if elapsed >= update_interval:
                 send_typing_action(chat_id)
-
-                progress_msg = f"Still working...\n\n"
-                progress_msg += f"Time: {int(time.time() - start_time)}s\n"
-                if tool_count > 0:
-                    progress_msg += f"Tools used: {tool_count}\n"
-                if current_activity:
-                    progress_msg += f"Current: {current_activity}"
-
-                send_message(chat_id, progress_msg)
                 last_update_time = time.time()
 
             if process.poll() is not None:
@@ -532,9 +523,6 @@ def invoke_claude_streaming(
 
         output_text = re.sub(r"\x1b\[[0-9;]*m", "", output_text)
         output_text = output_text.strip()
-
-        if not output_text:
-            output_text = "(No output from Claude)"
 
         return process.returncode == 0, output_text
 
@@ -597,17 +585,9 @@ def truncate_response(text: str, max_length: int = MAX_RESPONSE_LENGTH) -> str:
 
 
 def format_response(success: bool, response: str, execution_time: float) -> str:
-    time_str = f"{execution_time:.1f}s" if execution_time < 60 else f"{execution_time/60:.1f}m"
-
-    if success:
-        footer = f"\n\n---\nCompleted in {time_str}"
-    else:
-        footer = f"\n\n---\nFailed after {time_str}"
-
-    max_content = MAX_RESPONSE_LENGTH - len(footer) - 10
-    content = truncate_response(response, max_content)
-
-    return content + footer
+    if not success:
+        return truncate_response("Sorry, something went wrong. Try again.", MAX_RESPONSE_LENGTH)
+    return truncate_response(response, MAX_RESPONSE_LENGTH)
 
 
 # ---------------------------------------------------------------------------
@@ -691,9 +671,11 @@ def handle_message(message: Dict[str, Any], dry_run: bool = False) -> Dict[str, 
 
     execution_time = time.time() - start_time
 
-    # Format and send response
+    # Format and send response — skip if Claude ran tools with no text output
     formatted = format_response(success, response, execution_time)
-    send_result = send_message(chat_id, formatted)
+    send_result = {"success": False, "skipped": True}
+    if formatted and formatted.strip():
+        send_result = send_message(chat_id, formatted)
 
     # Check if this response is a hook that should trigger silence tracking
     config = load_config()

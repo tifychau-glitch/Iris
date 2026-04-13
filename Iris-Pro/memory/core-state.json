@@ -1,85 +1,39 @@
 {
   "_meta": {
-    "version": 9,
-    "last_updated_at": "2026-04-12T19:12:44.039919+00:00",
-    "last_confirmed_at": "2026-04-12T19:12:44.039919+00:00",
-    "source_of_last_write": "user_confirmed",
+    "version": 1,
+    "last_updated_at": null,
+    "last_confirmed_at": null,
+    "source_of_last_write": "system_canonical",
     "audit_log_ref": "memory/audit-log.jsonl",
-    "_field_timestamps": {
-      "identity": "2026-04-06T00:00:00+00:00",
-      "current_goals": "2026-04-06T00:00:00+00:00",
-      "offer_stack": "2026-04-06T00:00:00+00:00",
-      "tone_preferences": "2026-04-06T00:00:00+00:00",
-      "active_commitments": "2026-04-06T00:00:00+00:00",
-      "active_project_context": "2026-04-12T19:12:44.039919+00:00",
-      "canonical_business_facts": "2026-04-06T00:00:00+00:00"
-    }
+    "_field_timestamps": {}
   },
   "identity": {
-    "name": "Tiffany Chau",
-    "role": "Non-technical solo founder",
-    "business_name": "IRIS",
-    "business_type": "Accountability AIOS via Telegram for solopreneurs"
+    "name": "",
+    "role": "",
+    "business_name": "",
+    "business_type": ""
   },
   "current_goals": {
-    "primary": "Get IRIS stable and tested — biggest bottleneck is testing",
-    "secondary": [
-      "Find 10 beta testers from warm network (Subto community)",
-      "Validate market demand through real conversations in Subto",
-      "Find a developer collaborator to help finish the build",
-      "Start making money with IRIS"
-    ],
+    "primary": "",
+    "secondary": [],
     "horizon": "short",
-    "last_stated_at": "2026-04-06T00:00:00+00:00"
+    "last_stated_at": null
   },
   "offer_stack": {
-    "products": [
-      {
-        "name": "IRIS Core",
-        "price": "Free",
-        "description": "Lead magnet — entry-level IRIS access",
-        "status": "active"
-      },
-      {
-        "name": "IRIS Pro",
-        "price": "$797",
-        "description": "Full IRIS system via Lemon Squeezy",
-        "status": "active"
-      }
-    ],
-    "pricing_last_confirmed_at": "2026-04-06T00:00:00+00:00"
+    "products": [],
+    "pricing_last_confirmed_at": null
   },
   "tone_preferences": {
-    "communication_style": "Casual — talk like a friend, not a product",
-    "writing_voice": "Builder mentality, action over planning",
-    "avoid": [
-      "Framing things around failure or missed commitments",
-      "Receipts-style lists of what user said but didn't do",
-      "Overly formal or corporate language"
-    ]
+    "communication_style": "",
+    "writing_voice": "",
+    "avoid": []
   },
   "active_commitments": [],
-  "active_project_context": {
-    "project_name": "IRIS Memory System Upgrade",
-    "status": "active",
-    "priority": 1,
-    "current_phase": "Phases 1-5 complete — memory architecture shipped",
-    "last_touched_at": "2026-04-12T00:00:00+00:00"
-  },
+  "active_project_context": [],
   "canonical_business_facts": {
-    "target_audience": "Solopreneurs — specifically Pace Morby / Subto community (creative finance real estate)",
-    "primary_platform": "Telegram (@Heyitsirisbot)",
-    "location": "Mac mini (always-on, PM2 managed)",
-    "custom": {
-      "network": "3 years in Pace Morby / Subto community — warm leads",
-      "tech_level": "Non-technical founder, learning as she goes",
-      "payment_processor": "Lemon Squeezy",
-      "content_platforms": [
-        "Instagram",
-        "Facebook",
-        "TikTok"
-      ],
-      "validation_status": "Skipped market validation — built first, needs real conversations"
-    }
+    "target_audience": "",
+    "primary_platform": "",
+    "location": "",
+    "custom": {}
   }
 }

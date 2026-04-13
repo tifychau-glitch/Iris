@@ -25,6 +25,12 @@
       "runtimeArgs": ["-m", "http.server", "7070"],
       "port": 7070,
       "cwd": "/Users/tiffanychau/Downloads/IRIS/Iris-Pro"
+    },
+    {
+      "name": "Landing Page",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8000", "--directory", "../iris-landing-page"],
+      "port": 8000
     }
   ]
 }

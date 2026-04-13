@@ -31,16 +31,6 @@ TRACKER.md is the single source of truth for all IRIS work. Keep it current.
 - Remove duplicates. If something is in "Ideas" and gets committed, move it to "Roadmap" — don't copy.
 - Items that are no longer relevant can be removed with a note in the daily log.
 
-## Dashboard sync:
-
-When working on a project tracked in the dashboard, also log activity:
-```bash
-python3 dashboard/update.py log <project_id> "description of what was done"
-python3 dashboard/update.py status <project_id> <new_status>
-```
-
-Run `python3 dashboard/update.py list` to see project IDs.
-
 ## Tags reference:
 
 `#core` `#dashboard` `#telegram` `#memory` `#accountability` `#skills` `#automation` `#business` `#docs` `#cleanup` `#launch` `#integrations` `#security` `#onboarding` `#email` `#growth` `#marketing`

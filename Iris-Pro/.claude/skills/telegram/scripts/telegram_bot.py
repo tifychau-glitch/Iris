@@ -227,7 +227,7 @@ def process_callback_query(callback: Dict) -> Dict[str, Any]:
 
 
 def poll_once(offset: Optional[int] = None) -> Dict[str, Any]:
-    updates_result = get_updates(offset=offset, timeout=1)
+    updates_result = get_updates(offset=offset, timeout=30)
 
     if not updates_result.get("success"):
         return updates_result

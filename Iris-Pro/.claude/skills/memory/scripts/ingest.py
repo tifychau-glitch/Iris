@@ -601,7 +601,7 @@ GOLDEN_TESTS = [
     ("The business is called IRIS.", "user_explicit",
      CLASS_CANONICAL_FACT, DEST_CORE_STATE, "business name explicit"),
 
-    ("My name is Tiffany.", "user_explicit",
+    ("My name is Alex.", "user_explicit",
      CLASS_CANONICAL_FACT, DEST_CORE_STATE, "name explicit"),
 
     ("My goal is to get 10 paying users this month.", "user_explicit",

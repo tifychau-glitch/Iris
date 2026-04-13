@@ -211,6 +211,42 @@ def list_connectors():
     return jsonify(result)
 
 
+def _start_telegram_handler():
+    """Start the Telegram handler process if not already running."""
+    handler_script = PROJECT_ROOT / ".claude" / "skills" / "telegram" / "scripts" / "telegram_handler.py"
+    if not handler_script.exists():
+        return
+
+    # Check if already running
+    try:
+        result = subprocess.run(
+            ["pgrep", "-f", "telegram_handler.py"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            return  # Already running
+    except Exception:
+        pass
+
+    # Ensure dependencies are installed
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-q",
+             "python-dotenv", "requests"],
+            capture_output=True, check=False
+        )
+    except Exception:
+        pass
+
+    # Launch handler detached from dashboard process
+    subprocess.Popen(
+        [sys.executable, str(handler_script)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+
+
 @app.route("/api/connectors/<name>/save", methods=["POST"])
 
 def save_connector(name):
@@ -236,6 +272,10 @@ def save_connector(name):
     )
     conn.commit()
     conn.close()
+
+    # If Telegram credentials were just saved, start the handler now
+    if name == "telegram":
+        _start_telegram_handler()
 
     return jsonify({"success": True})
 

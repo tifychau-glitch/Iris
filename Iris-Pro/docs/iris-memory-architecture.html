@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IRIS Memory Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0d1117;
+    color: #e6edf3;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    padding: 48px 40px;
+  }
+
+  h1.title {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 34px;
+    font-weight: 700;
+    color: #f0f6fc;
+    margin-bottom: 6px;
+  }
+
+  p.subtitle {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: #7d8590;
+    letter-spacing: 1px;
+    margin-bottom: 52px;
+  }
+
+  .arch { max-width: 1280px; margin: 0 auto; }
+
+  /* ═══ ROWS ═══ */
+  .row { display: flex; gap: 20px; }
+  .row > .box { flex: 1; min-width: 0; }
+
+  /* ═══ BOX ═══ */
+  .box {
+    border-radius: 14px;
+    padding: 20px;
+    position: relative;
+  }
+
+  .box-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .box-desc {
+    font-size: 11.5px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+    opacity: 0.65;
+  }
+
+  .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #484f58;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 10px 0 6px;
+  }
+
+  .items { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .chip {
+    padding: 6px 11px;
+    border-radius: 7px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  /* ═══ TAGS ═══ */
+  .tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .tag-hook { background: #f0804030; color: #f0a050; border: 1px solid #f0804050; }
+  .tag-script { background: #58a6ff25; color: #79c0ff; border: 1px solid #58a6ff45; }
+  .tag-file { background: #8b949e20; color: #8b949e; border: 1px solid #8b949e40; }
+  .tag-db { background: #b18cff25; color: #c9a8ff; border: 1px solid #b18cff45; }
+  .tag-api { background: #3fb95025; color: #7ee87e; border: 1px solid #3fb95045; }
+
+  /* ═══ BADGES ═══ */
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  /* ═══ CONNECTION ROWS ═══ */
+  .connections {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    padding: 18px 0;
+    flex-wrap: wrap;
+  }
+
+  .conn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 7px 16px;
+    border-radius: 20px;
+    background: #161b2280;
+    border: 1px solid #21262d;
+  }
+
+  .conn .arrow {
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  /* Connection colors */
+  .conn-vault { color: #d4dba0; border-color: #4a503060; }
+  .conn-vault .arrow { color: #d4dba0; }
+  .conn-vault .conn-dot { background: #d4dba0; }
+
+  .conn-teal { color: #58d5ba; border-color: #1a5c6e60; }
+  .conn-teal .arrow { color: #58d5ba; }
+
+  .conn-purple { color: #b18cff; border-color: #4a388060; }
+  .conn-purple .arrow { color: #b18cff; }
+
+  .conn-amber { color: #f0c040; border-color: #6e5a1a60; }
+  .conn-amber .arrow { color: #f0c040; }
+
+  .conn-rose { color: #ff6b8a; border-color: #6e1a4060; }
+  .conn-rose .arrow { color: #ff6b8a; }
+
+  .conn-blue { color: #58a6ff; border-color: #1e408060; }
+  .conn-blue .arrow { color: #58a6ff; }
+
+  .conn-green { color: #3fb950; border-color: #1a6e3060; }
+  .conn-green .arrow { color: #3fb950; }
+
+  .conn-indigo { color: #a090e0; border-color: #3a387060; }
+  .conn-indigo .arrow { color: #a090e0; }
+
+  .conn-red { color: #f85149; border-color: #6e202060; }
+  .conn-red .arrow { color: #f85149; }
+
+  /* Dot between source and dest */
+  .conn-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .conn-src, .conn-dest {
+    font-size: 10px;
+    opacity: 0.7;
+    font-weight: 400;
+  }
+
+  /* ═══ COLOR THEMES ═══ */
+
+  /* Vault — Olive/Sage */
+  .vault { background: linear-gradient(135deg, #1a1d14 0%, #16180f 100%); border: 1.5px solid #4a5030; }
+  .vault .box-label { color: #d4dba0; }
+  .vault .box-desc { color: #8a9060; }
+  .chip-vault { background: #2a3018; color: #c8d88a; border: 1px solid #4a5030; }
+  .badge-vault { background: #4a503044; color: #d4dba0; border: 1px solid #4a5030; }
+
+  /* Tier 1 — Teal */
+  .t1 { background: linear-gradient(135deg, #0d2d3a 0%, #0a2530 100%); border: 1.5px solid #1a5c6e; }
+  .t1 .box-label { color: #58d5ba; }
+  .t1 .box-desc { color: #5aa090; }
+  .chip-t1 { background: #0e3a3a; color: #7ee8d0; border: 1px solid #1a6e60; }
+  .badge-t1 { background: #1a5c6e44; color: #58d5ba; border: 1px solid #1a5c6e; }
+
+  /* Tier 2 — Purple */
+  .t2 { background: linear-gradient(135deg, #1e1740 0%, #181230 100%); border: 1.5px solid #4a3880; }
+  .t2 .box-label { color: #b18cff; }
+  .t2 .box-desc { color: #7a68a0; }
+  .chip-t2 { background: #241a50; color: #c9a8ff; border: 1px solid #4a3080; }
+  .badge-t2 { background: #4a388044; color: #b18cff; border: 1px solid #4a3880; }
+
+  /* Tier 3 — Amber */
+  .t3 { background: linear-gradient(135deg, #2a2010 0%, #221a0a 100%); border: 1.5px solid #6e5a1a; }
+  .t3 .box-label { color: #f0c040; }
+  .t3 .box-desc { color: #a08840; }
+  .chip-t3 { background: #3a3010; color: #f0d060; border: 1px solid #6e5a20; }
+  .badge-t3 { background: #6e5a1a44; color: #f0c040; border: 1px solid #6e5a1a; }
+
+  /* Capture — Rose */
+  .cap { background: linear-gradient(135deg, #2d1020 0%, #220c18 100%); border: 1.5px solid #6e1a40; }
+  .cap .box-label { color: #ff6b8a; }
+  .cap .box-desc { color: #a05060; }
+  .chip-cap { background: #3a1028; color: #ff8ea8; border: 1px solid #6e2048; }
+
+  /* Retrieval — Blue */
+  .ret { background: linear-gradient(135deg, #101d35 0%, #0c1628 100%); border: 1.5px solid #1e4080; }
+  .ret .box-label { color: #58a6ff; }
+  .ret .box-desc { color: #4a7ab0; }
+  .chip-ret { background: #102848; color: #79c0ff; border: 1px solid #1e4880; }
+
+  /* Compiler — Indigo */
+  .comp { background: linear-gradient(135deg, #1a1a30 0%, #141425 100%); border: 1.5px solid #3a3870; }
+  .comp .box-label { color: #a090e0; }
+  .comp .box-desc { color: #6860a0; }
+  .chip-comp { background: #2a2050; color: #c0b0ff; border: 1px solid #4a3880; }
+
+  /* Brain — Green */
+  .brain { background: linear-gradient(135deg, #0d2a18 0%, #0a2010 100%); border: 1.5px solid #1a6e30; }
+  .brain .box-label { color: #3fb950; }
+  .brain .box-desc { color: #407840; }
+  .chip-brain { background: #0f3a1e; color: #7ee87e; border: 1px solid #1a6e30; }
+
+  /* Security — Red */
+  .sec { background: linear-gradient(135deg, #2a0f0f 0%, #1e0a0a 100%); border: 1.5px solid #6e2020; }
+  .sec .box-label { color: #f85149; }
+  .sec .box-desc { color: #a04040; }
+  .chip-sec { background: #3a1010; color: #ff8080; border: 1px solid #6e2020; }
+
+  /* Infra — Neutral */
+  .infra { background: linear-gradient(135deg, #161b22 0%, #0d1117 100%); border: 1.5px solid #30363d; }
+  .infra .box-label { color: #8b949e; }
+  .infra .box-desc { color: #484f58; }
+  .chip-infra { background: #1e2530; color: #a0b0c0; border: 1px solid #30404f; }
+
+  /* ═══ LEGEND ═══ */
+  .legend {
+    max-width: 1280px;
+    margin: 36px auto 0;
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #7d8590;
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+  /* ═══ STATS ═══ */
+  .stats {
+    max-width: 1280px;
+    margin: 36px auto 0;
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; color: #f0f6fc; }
+  .stat-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #484f58; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ═══ WIDE BOX ═══ */
+  .wide { flex: 1.5 !important; }
+</style>
+</head>
+<body>
+
+<h1 class="title">IRIS Memory Architecture</h1>
+<p class="subtitle">Identity Layer &bull; 3-Tier Memory &bull; Semantic Search &bull; Automatic Capture</p>
+
+<div class="arch">
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--  ROW 1: VAULT + 3 MEMORY TIERS         -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="row">
+
+    <!-- OBSIDIAN VAULT -->
+    <div class="box vault wide">
+      <span class="badge badge-vault">IDENTITY LAYER</span>
+      <div class="box-label">Obsidian Vault</div>
+      <div class="box-desc">Your second brain. The single source of truth for who you are and what you care about. IRIS reads from it &mdash; writes only with your permission.</div>
+
+      <div class="sub">User-Owned (Read-Only to IRIS)</div>
+      <div class="items">
+        <div class="chip chip-vault"><span class="tag tag-file">.md</span> me.md</div>
+        <div class="chip chip-vault"><span class="tag tag-file">.md</span> my-everest.md</div>
+        <div class="chip chip-vault"><span class="tag tag-file">.md</span> my-voice.md</div>
+        <div class="chip chip-vault"><span class="tag tag-file">.md</span> my-business.md</div>
+        <div class="chip chip-vault"><span class="tag tag-file">.md</span> iris-rules.md</div>
+      </div>
+
+      <div class="sub">IRIS Can Append To</div>
+      <div class="items">
+        <div class="chip chip-vault">Calendar/ daily notes</div>
+        <div class="chip chip-vault">Concepts/ (new insights)</div>
+        <div class="chip chip-vault">Efforts/ (project notes)</div>
+      </div>
+
+      <div class="sub">Vault Scripts</div>
+      <div class="items">
+        <div class="chip chip-vault"><span class="tag tag-script">.py</span> vault_context.py</div>
+        <div class="chip chip-vault"><span class="tag tag-script">.py</span> vault_read.py</div>
+        <div class="chip chip-vault"><span class="tag tag-script">.py</span> vault_write.py</div>
+        <div class="chip chip-vault"><span class="tag tag-script">.py</span> vault_init.py</div>
+      </div>
+    </div>
+
+    <!-- TIER 1 -->
+    <div class="box t1">
+      <span class="badge badge-t1">TIER 1 &middot; ALWAYS LOADED</span>
+      <div class="box-label">Core Memory</div>
+      <div class="box-desc">Curated facts loaded into every session. &lt;200 lines. Synced from vector store.</div>
+      <div class="items">
+        <div class="chip chip-t1"><span class="tag tag-file">.md</span> MEMORY.md</div>
+        <div class="chip chip-t1">Preferences</div>
+        <div class="chip chip-t1">Business Facts</div>
+        <div class="chip chip-t1">Goals</div>
+        <div class="chip chip-t1">Learned Behaviors</div>
+      </div>
+      <div class="sub">Sync</div>
+      <div class="items">
+        <div class="chip chip-t1"><span class="tag tag-script">.py</span> mem0_sync_md.py</div>
+      </div>
+    </div>
+
+    <!-- TIER 2 -->
+    <div class="box t2">
+      <span class="badge badge-t2">TIER 2 &middot; SESSION</span>
+      <div class="box-label">Session Logs</div>
+      <div class="box-desc">Append-only daily timeline. Read at session start for continuity.</div>
+      <div class="items">
+        <div class="chip chip-t2"><span class="tag tag-file">.md</span> YYYY-MM-DD.md</div>
+        <div class="chip chip-t2">Events &amp; Decisions</div>
+        <div class="chip chip-t2">Timestamps</div>
+        <div class="chip chip-t2">Completed Tasks</div>
+      </div>
+      <div class="sub">Log</div>
+      <div class="items">
+        <div class="chip chip-t2"><span class="tag tag-script">.py</span> daily_log.py</div>
+      </div>
+    </div>
+
+    <!-- TIER 3 -->
+    <div class="box t3">
+      <span class="badge badge-t3">TIER 3 &middot; LONG-TERM</span>
+      <div class="box-label">Vector Memory</div>
+      <div class="box-desc">Semantic store. Auto-deduplicated. Cloud-synced via Upstash.</div>
+      <div class="items">
+        <div class="chip chip-t3"><span class="tag tag-api">API</span> Upstash Vector</div>
+        <div class="chip chip-t3"><span class="tag tag-api">API</span> mem0 Engine</div>
+        <div class="chip chip-t3">1536-dim Embeddings</div>
+        <div class="chip chip-t3">Deduplication</div>
+      </div>
+      <div class="sub">Scripts</div>
+      <div class="items">
+        <div class="chip chip-t3"><span class="tag tag-script">.py</span> mem0_add.py</div>
+        <div class="chip chip-t3"><span class="tag tag-script">.py</span> mem0_client.py</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--  CONNECTIONS: Row 1 → Row 2             -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="connections">
+    <div class="conn conn-vault">
+      <span class="conn-src">Vault</span>
+      <span class="arrow">&#x2192;</span>
+      <span>Identity loaded at session start</span>
+      <span class="arrow">&#x2192;</span>
+      <span class="conn-dest">Core Memory</span>
+    </div>
+    <div class="conn conn-amber">
+      <span class="conn-src">Vector Store</span>
+      <span class="arrow">&#x2192;</span>
+      <span>mem0_sync_md.py regenerates</span>
+      <span class="arrow">&#x2192;</span>
+      <span class="conn-dest">MEMORY.md</span>
+    </div>
+    <div class="conn conn-purple">
+      <span class="conn-src">Session Logs</span>
+      <span class="arrow">&#x2192;</span>
+      <span>Transcript feeds</span>
+      <span class="arrow">&#x2192;</span>
+      <span class="conn-dest">Auto-Capture</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--  ROW 2: CAPTURE + SEARCH + COMPILER     -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="row">
+
+    <!-- AUTO CAPTURE -->
+    <div class="box cap">
+      <div class="box-label">Automatic Capture</div>
+      <div class="box-desc">Fires after every IRIS response. Extracts facts, scrubs secrets, stores to vector memory.</div>
+      <div class="items">
+        <div class="chip chip-cap"><span class="tag tag-hook">HOOK</span> Stop Hook (async)</div>
+        <div class="chip chip-cap"><span class="tag tag-hook">HOOK</span> memory_capture.py</div>
+        <div class="chip chip-cap"><span class="tag tag-script">.py</span> auto_capture.py</div>
+        <div class="chip chip-cap"><span class="tag tag-api">API</span> GPT-4.1 Nano</div>
+        <div class="chip chip-cap">Session Markers</div>
+        <div class="chip chip-cap">Batch Processing</div>
+      </div>
+    </div>
+
+    <!-- RETRIEVAL -->
+    <div class="box ret">
+      <div class="box-label">Retrieval &amp; Search</div>
+      <div class="box-desc">Hybrid search combining keyword (BM25) and semantic (vector) results. Recent memories rank higher.</div>
+      <div class="items">
+        <div class="chip chip-ret"><span class="tag tag-script">.py</span> smart_search.py</div>
+        <div class="chip chip-ret"><span class="tag tag-script">.py</span> mem0_search.py</div>
+        <div class="chip chip-ret"><span class="tag tag-db">DB</span> FTS5 Keyword Index</div>
+        <div class="chip chip-ret">Hybrid BM25 + Vector</div>
+        <div class="chip chip-ret">Temporal Decay</div>
+        <div class="chip chip-ret">MMR Diversity</div>
+      </div>
+    </div>
+
+    <!-- COMPILER -->
+    <div class="box comp">
+      <div class="box-label">Compiler</div>
+      <div class="box-desc">Reads vault identity + journal observations. Proposes structured knowledge. Writes only after user approval.</div>
+      <div class="items">
+        <div class="chip chip-comp"><span class="tag tag-script">.py</span> compile.py</div>
+        <div class="chip chip-comp"><span class="tag tag-script">.py</span> review.py</div>
+        <div class="chip chip-comp"><span class="tag tag-db">DB</span> compiler_proposals.db</div>
+        <div class="chip chip-comp">New Concepts</div>
+        <div class="chip chip-comp">Effort Appends</div>
+        <div class="chip chip-comp">Gap Observations</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--  CONNECTIONS: Row 2 flows               -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="connections">
+    <div class="conn conn-rose">
+      <span class="conn-src">Auto-Capture</span>
+      <span class="arrow">&#x2192;</span>
+      <span>Extracted facts stored in</span>
+      <span class="arrow">&#x2192;</span>
+      <span class="conn-dest">Vector Memory (Tier 3)</span>
+    </div>
+    <div class="conn conn-blue">
+      <span class="conn-src">Search</span>
+      <span class="arrow">&#x2194;</span>
+      <span>Queries both</span>
+      <span class="arrow">&#x2194;</span>
+      <span class="conn-dest">Vector Store + FTS5</span>
+    </div>
+    <div class="conn conn-indigo">
+      <span class="conn-src">Compiler</span>
+      <span class="arrow">&#x2192;</span>
+      <span>Approved proposals write to</span>
+      <span class="arrow">&#x2192;</span>
+      <span class="conn-dest">Vault (Concepts/ &amp; Efforts/)</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--  ROW 3: SECURITY + BRAIN SYNC           -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="row">
+
+    <!-- SECURITY -->
+    <div class="box sec">
+      <div class="box-label">Security Layer</div>
+      <div class="box-desc">Runs on every memory operation. Scrubs credentials before anything leaves your machine.</div>
+      <div class="items">
+        <div class="chip chip-sec"><span class="tag tag-script">.py</span> sanitize_text()</div>
+        <div class="chip chip-sec">API Keys (sk-*)</div>
+        <div class="chip chip-sec">Slack Tokens (xoxb-*)</div>
+        <div class="chip chip-sec">GitHub Tokens (ghp_*)</div>
+        <div class="chip chip-sec">JWTs &amp; Bearer</div>
+        <div class="chip chip-sec">Connection Strings</div>
+      </div>
+    </div>
+
+    <!-- BRAIN SYNC -->
+    <div class="box brain wide">
+      <div class="box-label">Brain Sync</div>
+      <div class="box-desc">Compiles strategic context from all memory tiers + tracker + build log into a knowledge bundle for Claude.ai Project.</div>
+      <div class="items">
+        <div class="chip chip-brain"><span class="tag tag-script">.py</span> generate_brain.py</div>
+        <div class="chip chip-brain"><span class="tag tag-file">.md</span> IRIS-BRAIN.md</div>
+        <div class="chip chip-brain"><span class="tag tag-file">.md</span> TRACKER.md</div>
+        <div class="chip chip-brain"><span class="tag tag-file">.md</span> BUILD-LOG.md</div>
+        <div class="chip chip-brain">Daily Logs</div>
+        <div class="chip chip-brain">MEMORY.md</div>
+        <div class="chip chip-brain"><span class="tag tag-api">API</span> Claude.ai Knowledge Base</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--  CONNECTIONS: Row 3 flows               -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="connections">
+    <div class="conn conn-red">
+      <span class="conn-src">Security</span>
+      <span class="arrow">&#x2192;</span>
+      <span>Scrubs all outbound data from</span>
+      <span class="arrow">&#x2190;</span>
+      <span class="conn-dest">Capture, Search, Sync</span>
+    </div>
+    <div class="conn conn-green">
+      <span class="conn-src">Brain Sync</span>
+      <span class="arrow">&#x2192;</span>
+      <span>Reads all 3 tiers + vault, outputs</span>
+      <span class="arrow">&#x2192;</span>
+      <span class="conn-dest">Claude.ai Knowledge Base</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!--  ROW 4: INFRASTRUCTURE                  -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="row">
+    <div class="box infra" style="flex:1;">
+      <div class="box-label">Infrastructure</div>
+      <div class="box-desc">External services and local storage backing the entire memory system</div>
+      <div class="items" style="justify-content:center;">
+        <div class="chip chip-t3"><span class="tag tag-api">API</span> Upstash Vector (Cloud)</div>
+        <div class="chip chip-infra"><span class="tag tag-api">API</span> OpenAI Embeddings</div>
+        <div class="chip chip-infra"><span class="tag tag-api">API</span> GPT-4.1 Nano (Extraction)</div>
+        <div class="chip chip-infra"><span class="tag tag-db">DB</span> SQLite (History + FTS5)</div>
+        <div class="chip chip-infra"><span class="tag tag-file">.md</span> Local Markdown Files</div>
+        <div class="chip chip-brain"><span class="tag tag-api">API</span> Claude.ai Knowledge Base</div>
+        <div class="chip chip-vault">~/Documents/Iris Vault</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /arch -->
+
+<!-- ═══════════ STATS ═══════════ -->
+<div class="stats">
+  <div class="stat"><div class="stat-num">3</div><div class="stat-label">Memory Tiers</div></div>
+  <div class="stat"><div class="stat-num">13</div><div class="stat-label">Python Scripts</div></div>
+  <div class="stat"><div class="stat-num">2</div><div class="stat-label">Hooks</div></div>
+  <div class="stat"><div class="stat-num">1536</div><div class="stat-label">Vector Dimensions</div></div>
+  <div class="stat"><div class="stat-num">2</div><div class="stat-label">Search Methods</div></div>
+  <div class="stat"><div class="stat-num">$0.04</div><div class="stat-label">/Month</div></div>
+</div>
+
+<!-- ═══════════ LEGEND ═══════════ -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#d4dba0;"></div>Obsidian Vault (Identity)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#58d5ba;"></div>Tier 1 — Core (Always Loaded)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#b18cff;"></div>Tier 2 — Session (Daily Logs)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f0c040;"></div>Tier 3 — Vector (Cloud)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#58a6ff;"></div>Retrieval &amp; Search</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff6b8a;"></div>Automatic Capture</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3fb950;"></div>Brain Sync</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f85149;"></div>Security</div>
+</div>
+
+<div class="legend" style="margin-top: 14px;">
+  <div class="legend-item"><span class="tag tag-hook" style="margin-right:4px;">HOOK</span> Automated trigger</div>
+  <div class="legend-item"><span class="tag tag-script" style="margin-right:4px;">.py</span> Python script</div>
+  <div class="legend-item"><span class="tag tag-file" style="margin-right:4px;">.md</span> Markdown file</div>
+  <div class="legend-item"><span class="tag tag-db" style="margin-right:4px;">DB</span> Database</div>
+  <div class="legend-item"><span class="tag tag-api" style="margin-right:4px;">API</span> External service</div>
+</div>
+
+</body>
+</html>
