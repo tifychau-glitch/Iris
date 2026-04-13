@@ -47,6 +47,10 @@ def check_command(command: str) -> dict:
     """Check a command against guardrails. Returns {allow: bool, reason: str}."""
     cmd_lower = command.lower().strip()
 
+    # git rm --cached only removes files from git's index, not from disk — always safe
+    if "git rm --cached" in cmd_lower:
+        return {"allow": True, "reason": ""}
+
     # Check blocked patterns
     for pattern in BLOCKED_PATTERNS:
         if pattern.lower() in cmd_lower:

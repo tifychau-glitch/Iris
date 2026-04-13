@@ -35,3 +35,14 @@ venv/
 # Auto-capture markers and logs
 data/capture_markers/
 data/auto_capture.log
+
+# Personal user data — stays on personal branch only, not in template
+memory/core-state.json
+memory/MEMORY.md
+memory/audit-log.jsonl
+memory/ingest-log.jsonl
+memory/pending-writes.jsonl
+memory/wiki/
+context/my-business.md
+context/my-mteverest.md
+context/my-voice.md
