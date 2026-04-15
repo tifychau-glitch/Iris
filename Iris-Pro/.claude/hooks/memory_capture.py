@@ -5,7 +5,7 @@ Purpose: Automatically extract facts from conversations and append to daily log.
 Trigger: Runs async after every Claude response via the Stop hook.
 
 This is the BASIC version (Tier 1+2 memory — no API keys required).
-For the advanced version with mem0 + Upstash Vector (Tier 3), see docs/MEMORY-UPGRADE.md.
+For the advanced version with mem0 + Pinecone (Tier 3), see docs/MEMORY-UPGRADE.md.
 """
 
 import json
@@ -56,7 +56,7 @@ def main():
 
     In the basic version, this ensures the daily log exists and is ready.
     The advanced version (mem0) reads the transcript, extracts facts,
-    and stores them as vectors in Upstash Vector.
+    and stores them as vectors in Pinecone.
 
     To upgrade to the full mem0 system, see docs/MEMORY-UPGRADE.md.
     """

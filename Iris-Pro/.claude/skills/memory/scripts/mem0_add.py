@@ -25,7 +25,7 @@ def add_memory(content=None, messages=None, metadata=None):
     kwargs = {"user_id": USER_ID}
     if metadata:
         kwargs["metadata"] = metadata
-    # Scrub secrets before sending to OpenAI/Upstash
+    # Scrub secrets before sending to OpenAI/Pinecone
     if messages:
         messages = [{"role": msg["role"], "content": sanitize_text(msg["content"])} for msg in messages]
         result = m.add(messages, **kwargs)

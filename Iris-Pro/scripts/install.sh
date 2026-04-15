@@ -113,9 +113,8 @@ if [ ! -f .env ]; then
 # IRIS Environment Variables
 # Add your keys here or use the dashboard at http://localhost:5050/settings
 
-# Upstash Vector (long-term memory)
-UPSTASH_VECTOR_REST_URL=
-UPSTASH_VECTOR_REST_TOKEN=
+# Pinecone (long-term memory)
+PINECONE_API_KEY=
 
 # Telegram Bot
 TELEGRAM_BOT_TOKEN=

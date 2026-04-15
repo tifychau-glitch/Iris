@@ -34,15 +34,10 @@ REQUIRED_KEYS = {
 }
 
 OPTIONAL_KEYS = {
-    "UPSTASH_VECTOR_REST_URL": {
-        "label": "Upstash Vector REST URL",
-        "validate": lambda v: v.startswith("https://") and "upstash" in v,
-        "hint": "Should start with https:// and contain 'upstash' (optional — enables cross-session memory)",
-    },
-    "UPSTASH_VECTOR_REST_TOKEN": {
-        "label": "Upstash Vector REST Token",
+    "PINECONE_API_KEY": {
+        "label": "Pinecone API Key",
         "validate": lambda v: len(v) > 10,
-        "hint": "Should be a long alphanumeric string (optional — enables cross-session memory)",
+        "hint": "Get one free at app.pinecone.io (optional — enables cross-session memory)",
     },
 }
 

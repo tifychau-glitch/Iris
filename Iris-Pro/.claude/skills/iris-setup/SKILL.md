@@ -94,7 +94,7 @@ Keep this fast — it's context, not a requirement. Telegram was already set up 
 **Check for optional API keys** (only ask about keys that are MISSING):
 ```bash
 python3 .claude/skills/iris-setup/scripts/secure_key_input.py --check OPENAI_API_KEY
-python3 .claude/skills/iris-setup/scripts/secure_key_input.py --check UPSTASH_VECTOR_REST_URL
+python3 .claude/skills/iris-setup/scripts/secure_key_input.py --check PINECONE_API_KEY
 ```
 
 ### Phase 5: Auto-Configure
@@ -127,9 +127,9 @@ Wait for confirmation ("yes", "looks good", "correct", thumbs up, etc.) before p
 
 5. **Update `memory/MEMORY.md`** — Add goals from Phase 4 to the "Current Goals" section. Add key business facts to "Business Facts". Add preferences to "User Preferences".
 
-5. **Set up advanced memory (if keys provided)** — If the user provided OpenAI + Upstash Vector credentials in Phase 3:
-   - Add `OPENAI_API_KEY`, `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN` to `.env`
-   - Run: `python3 scripts/setup_memory.py --user-id "<name>" --upstash-collection "<business>-memory"`
+5. **Set up advanced memory (if keys provided)** — If the user provided OpenAI + Pinecone credentials in Phase 3:
+   - Add `OPENAI_API_KEY`, `PINECONE_API_KEY` to `.env`
+   - Run: `python3 scripts/setup_memory.py --user-id "<name>" --pinecone-index "<business>-memory"`
    - If they didn't provide keys, mention: "You can upgrade to advanced memory later by running `python3 scripts/setup_memory.py`"
 
 6. **Scaffold the vault (their second brain):**

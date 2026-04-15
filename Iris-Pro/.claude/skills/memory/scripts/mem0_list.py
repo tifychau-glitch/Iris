@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script: mem0 List Memories
-Purpose: List all memories. Falls back to history DB if Upstash Vector get_all() fails.
+Purpose: List all memories. Falls back to history DB if the vector store's get_all() fails.
 
 Usage:
     python .claude/skills/memory/scripts/mem0_list.py

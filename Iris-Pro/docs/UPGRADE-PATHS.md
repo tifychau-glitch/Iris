@@ -62,7 +62,7 @@ Generate presentations from markdown.
 
 ## Tier 3: Power User Upgrades
 
-### Vector Memory (mem0 + Upstash Vector)
+### Vector Memory (mem0 + Pinecone)
 The ultimate memory upgrade. See `docs/MEMORY-UPGRADE.md` for full setup.
 
 - Automatic fact extraction from every conversation
@@ -99,7 +99,7 @@ Access your AI OS from your phone. The bot polls for messages, invokes Claude Co
 - Whitelist-based security (reject by default)
 - Rate limiting (30/min, 200/hour)
 - Blocked command patterns (rm -rf, sudo, DROP TABLE)
-- Memory auto-load (searches Upstash Vector for relevant context per message)
+- Memory auto-load (searches Pinecone for relevant context per message)
 - Memory auto-capture (feeds exchanges into mem0 for future recall)
 - Streaming progress updates during long operations
 - SQLite message history (`data/messages.db`)

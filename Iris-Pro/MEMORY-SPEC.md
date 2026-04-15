@@ -568,13 +568,10 @@ The following infrastructure is already built and can be upgraded rather than re
 |---|---|---|
 | `smart_search.py` | `.claude/skills/memory/scripts/` | Has BM25 + vector + temporal decay. Needs trust_weight layer added. |
 | `auto_capture.py` | `.claude/skills/memory/scripts/` | Stop hook for fact extraction. Inactive — needs OPENAI_API_KEY. |
-| `mem0_config.yaml` | `.claude/skills/memory/references/` | Points to Upstash. Update to Pinecone. |
+| `mem0_config.yaml` | `.claude/skills/memory/references/` | Points to Pinecone (free tier, serverless). |
 | `memory_capture.py` | `.claude/hooks/` | Active Tier 1-2 hook. Keep as fallback. |
 | `MEMORY.md` | `memory/` | Will become a human-readable view of Core State (auto-generated). |
 | Daily logs | `memory/logs/` | Tier 2 session logs. Keep as-is. |
 | `mem0_history.db` | `data/` | SQLite audit trail. Supplement with `audit-log.jsonl`. |
 
-**Upstash references to remove:**
-- `mem0_config.yaml` — change vector store to Pinecone
-- `.env.example` — remove `UPSTASH_VECTOR_REST_URL` and `UPSTASH_VECTOR_REST_TOKEN`
-- Any script importing Upstash client directly
+**Vector store:** Pinecone (swapped in from Upstash). The migration is complete — `mem0_config.yaml` uses `provider: "pinecone"`, `.env.example` exposes `PINECONE_API_KEY`, and no script imports the Upstash client directly.

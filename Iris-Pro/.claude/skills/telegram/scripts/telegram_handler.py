@@ -4,7 +4,7 @@ Telegram → Claude Code Handler — Core daemon with mem0 memory integration.
 Routes Telegram messages to Claude Code for execution:
 1. Polls Telegram for incoming messages
 2. Validates sender (whitelist, rate limits, blocked patterns)
-3. Loads relevant memories from Upstash Vector via mem0
+3. Loads relevant memories from Pinecone via mem0
 4. Invokes Claude Code with message + memory context
 5. Sends response back via Telegram
 6. Captures conversation into mem0 for future recall
@@ -195,12 +195,12 @@ def _check_repetition(chat_id: int, text: str) -> Optional[str]:
 
 
 # ---------------------------------------------------------------------------
-# Memory integration (mem0 + Upstash Vector)
+# Memory integration (mem0 + Pinecone)
 # ---------------------------------------------------------------------------
 
 def get_memory_context(user_message: str) -> str:
     """
-    Search mem0/Upstash Vector for memories relevant to the user's message.
+    Search mem0/Pinecone for memories relevant to the user's message.
     This is the auto-load feature: every Telegram message triggers a semantic search.
     """
     try:
@@ -312,7 +312,7 @@ def _looks_like_garbage(text: str) -> bool:
 def capture_to_memory(user_msg: str, assistant_msg: str):
     """
     Feed Telegram conversation into mem0 for fact extraction.
-    Closes the loop: Telegram → Upstash Vector → future Telegram context.
+    Closes the loop: Telegram → Pinecone → future Telegram context.
     Skips capture for garbage/test inputs to prevent memory pollution.
     """
     if _looks_like_garbage(user_msg):
@@ -745,7 +745,7 @@ def process_updates(once: bool = False, dry_run: bool = False) -> Dict[str, Any]
     print(f"Starting Telegram handler")
     print(f"  Project root: {PROJECT_ROOT}")
     print(f"  Polling interval: {interval}s")
-    print(f"  Memory: mem0 + Upstash Vector (auto-load + auto-capture)")
+    print(f"  Memory: mem0 + Pinecone (auto-load + auto-capture)")
     print(f"  Silence handling: {'enabled' if silence_enabled else 'disabled'}")
     print(f"  Dry run: {dry_run}")
     print("Press Ctrl+C to stop\n")
