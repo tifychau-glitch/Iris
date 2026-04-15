@@ -69,16 +69,7 @@ After Telegram is connected, you asked "What are you building right now?" — co
 
 This third question is the **Mount Everest** — their north star goal. Don't use that term yet, just capture their answer. Write it to `context/my-mteverest.md` during Phase 5. **Skip this question if Mt. Everest was imported from Core in Phase 0.**
 
-4. **How do you want to be held accountable?** Always ask this with options — never open-ended. Use exactly this format:
-
-   > **How do you want to be held accountable?**
-   >
-   > **A)** Supportive — celebrate wins, gently redirect when you drift
-   > **B)** Direct — tell you what you need to hear, not what you want to hear
-   > **C)** Structured — give you the system, check the boxes, keep you on track
-   > **D)** Escalating — start gentle, get firmer if you keep slipping
-
-   Save their answer to `context/my-business.md` under `Accountability Style`. This setting drives how the accountability engine and silence handling responds to them.
+4. **Run the personality-calibration skill.** Instead of a single A/B/C/D question, Iris runs the 6-question intake from the `personality-calibration` skill to build a full voice profile. See `.claude/skills/personality-calibration/SKILL.md` for the questions and flow. At the end of that intake, the skill writes `iris_voice_profile` to `core-state.json` via `save_voice_profile.py --setup-complete`. The remaining 4 calibration questions are surfaced naturally over the user's first ~2 weeks of conversations — not here.
 
 ### Phase 2: Your Business
 

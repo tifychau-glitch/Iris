@@ -45,7 +45,7 @@
       "properties": {
         "name": { "type": "string", "minLength": 1 },
         "role": { "type": "string", "minLength": 1 },
-        "business_name": { "type": "string", "minLength": 1 },
+        "business_name": { "type": "string", "description": "Empty string is valid — user has not named the business yet." },
         "business_type": { "type": "string", "minLength": 1 }
       }
     },
@@ -175,6 +175,43 @@
           "type": "object",
           "description": "Flexible key-value store for IRIS-specific business facts."
         }
+      }
+    },
+    "iris_voice_profile": {
+      "type": "object",
+      "description": "How Iris talks to this specific user. Defines a single personality, seeded by personality-calibration skill. Context-mode flex (gentle/steady/direct) happens at runtime from message signals, not from this profile.",
+      "additionalProperties": false,
+      "properties": {
+        "warmth": { "type": "string", "enum": ["warm", "neutral", "reserved"] },
+        "directness_ceiling": { "type": "string", "enum": ["soft", "moderate", "blunt"] },
+        "humor": { "type": "string", "enum": ["dry", "playful", "sarcastic", "minimal", "unknown"] },
+        "swearing_ok": { "type": "boolean" },
+        "win_acknowledgment": { "type": "string", "enum": ["named_directly", "quietly_noted", "situational"] },
+        "decision_style": { "type": "string", "enum": ["needs_time", "acts_fast", "situational", "unknown"] },
+        "slip_handling": { "type": "string", "enum": ["name_it", "leave_alone", "situational"] },
+        "motivators": { "type": "array", "items": { "type": "string" } },
+        "shutdowns": { "type": "array", "items": { "type": "string" } },
+        "mode_triggers": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "gentle": { "type": "array", "items": { "type": "string" } },
+            "direct": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "assessments": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string" },
+        "calibration_progress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "setup_complete": { "type": "boolean" },
+            "pending_observations": { "type": "array", "items": { "type": "string" } },
+            "first_conversation_at": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+            "conversation_count": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "last_calibrated_at": { "type": "string", "format": "date-time" }
       }
     }
   }

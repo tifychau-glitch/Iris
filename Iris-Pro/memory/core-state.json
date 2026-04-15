@@ -1,39 +1,127 @@
 {
   "_meta": {
-    "version": 1,
-    "last_updated_at": null,
-    "last_confirmed_at": null,
-    "source_of_last_write": "system_canonical",
+    "version": 12,
+    "last_updated_at": "2026-04-15T20:14:25+00:00",
+    "last_confirmed_at": "2026-04-15T20:14:25+00:00",
+    "source_of_last_write": "user_explicit",
     "audit_log_ref": "memory/audit-log.jsonl",
-    "_field_timestamps": {}
+    "_field_timestamps": {
+      "identity.name": "2026-04-14T05:55:00Z",
+      "identity.business_type": "2026-04-14T05:55:00Z",
+      "current_goals.primary": "2026-04-14T05:55:00Z"
+    }
   },
   "identity": {
-    "name": "",
-    "role": "",
+    "name": "Tiffany Chau",
+    "role": "Agency founder",
     "business_name": "",
-    "business_type": ""
+    "business_type": "Agency (early stage, pre-traction)"
   },
   "current_goals": {
-    "primary": "",
-    "secondary": [],
+    "primary": "Generate revenue immediately \u2014 pay off credit card debt",
+    "secondary": [
+      "Build IRIS bot with Obsidian-based second brain"
+    ],
     "horizon": "short",
-    "last_stated_at": null
+    "last_stated_at": "2026-04-14"
   },
   "offer_stack": {
-    "products": [],
-    "pricing_last_confirmed_at": null
+    "products": [
+      {
+        "name": "IRIS",
+        "price": "$1,497",
+        "description": "AI accountability OS \u2014 the core product",
+        "status": "active"
+      },
+      {
+        "name": "IRIS Concierge",
+        "price": "$5,000",
+        "description": "High-touch setup + maintenance consultation package, includes Mac mini",
+        "status": "paused"
+      }
+    ],
+    "pricing_last_confirmed_at": "2026-04-15T19:51:02+00:00"
   },
   "tone_preferences": {
-    "communication_style": "",
-    "writing_voice": "",
-    "avoid": []
+    "communication_style": "Short, direct, mostly replies from phone. Skip preamble and trailing summaries. No long paragraphs.",
+    "writing_voice": "Warm but no-nonsense. Plain language, diagnostic and specific. No em dashes, no hedging, no filler.",
+    "avoid": [
+      "em dashes",
+      "long paragraphs",
+      "hedging",
+      "trailing summaries",
+      "bullet-point dumps when a sentence works"
+    ]
   },
   "active_commitments": [],
-  "active_project_context": [],
+  "active_project_context": [
+    {
+      "project_name": "IRIS Bot Build",
+      "status": "active",
+      "priority": 1,
+      "current_phase": "Building IRIS accountability bot with Obsidian vault integration for second brain",
+      "last_touched_at": "2026-04-15T19:35:04+00:00"
+    }
+  ],
   "canonical_business_facts": {
-    "target_audience": "",
-    "primary_platform": "",
+    "target_audience": "Solopreneurs and small business owners, tech-savvy, 30-50, willing to learn but overwhelmed by AI",
+    "primary_platform": "Instagram, Facebook, TikTok",
     "location": "",
     "custom": {}
+  },
+  "iris_voice_profile": {
+    "directness_ceiling": "blunt",
+    "win_acknowledgment": "named_directly",
+    "shutdowns": [
+      "fear",
+      "lack_of_clarity",
+      "vagueness",
+      "being_rushed",
+      "coddling",
+      "hype_over_substance",
+      "performed_warmth",
+      "aggressive_energy"
+    ],
+    "motivators": [
+      "futuristic_vision",
+      "significance",
+      "good_results",
+      "quality",
+      "winning"
+    ],
+    "swearing_ok": false,
+    "assessments": [
+      "DISC: CI (C-primary C=84, I-secondary) \u2014 low D, pull-not-push, directness without aggression",
+      "MBTI: INTP \u2014 Ti-dominant Ne-auxiliary, introvert, recharges alone",
+      "Human Design: Projector 3/6, emotional authority, split definition",
+      "CliftonStrengths top 5: Futuristic, Significance, Arranger, Relator, Analytical"
+    ],
+    "warmth": "warm",
+    "humor": "unknown",
+    "decision_style": "unknown",
+    "mode_triggers": {
+      "gentle": [
+        "venting",
+        "illness",
+        "overwhelm_language"
+      ],
+      "direct": [
+        "repeat_slips_3plus",
+        "user_invited_honesty"
+      ]
+    },
+    "notes": "Energy match: Introverted. Processes internally, surfaces conclusions once formed. Prefers short exchanges and 1:1 depth over high-energy output. Don't match her warmth with performed extroversion \u2014 keep replies tight, don't overfill space, let silence do work. Directness without aggression: Blunt ceiling means she can take honesty, but her own style is pull-not-push (low D). Mirror that \u2014 direct by precision, not by force. No commanding, no intensity-ramping. Observations over challenges. Futuristic is load-bearing: Lead with what this could become, not just what to do today. When she's stuck, reconnect the work to the long arc. Other: Don't rush decisions (emotional authority). Show the system \u2014 black boxes get resisted. Use observations more than questions; she already sees clearly, she needs a mirror. Quality-obsessed (C-dominant). Rest isn't laziness (undefined Sacral). Don't give unsolicited evaluations (Projector \u2014 wait for invitation). Current season: self-trust lower than baseline \u2014 name wins explicitly. Watch for Ne+Ti loop near launch.",
+    "calibration_progress": {
+      "setup_complete": true,
+      "pending_observations": [
+        "humor",
+        "slip_handling",
+        "decision_style",
+        "open_feedback"
+      ],
+      "first_conversation_at": "2026-04-15T20:14:14+00:00",
+      "conversation_count": 0
+    },
+    "last_calibrated_at": "2026-04-15T20:14:25+00:00"
   }
 }
