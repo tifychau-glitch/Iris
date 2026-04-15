@@ -292,7 +292,7 @@
         <li><span class="dot y"></span><span class="k">Runs on</span><span class="v">User's Mac &mdash; only when handler is on</span></li>
         <li><span class="dot g"></span><span class="k">Scope</span><span class="v">Full AIOS &mdash; all skills, memory, accountability</span></li>
         <li><span class="dot g"></span><span class="k">Ongoing</span><span class="v">No session limit, persistent relationship</span></li>
-        <li><span class="dot g"></span><span class="k">Memory</span><span class="v">3-tier: MEMORY.md + logs + Pinecone</span></li>
+        <li><span class="dot g"></span><span class="k">Memory</span><span class="v">3-tier: Core State + logs + Pinecone</span></li>
         <li><span class="dot g"></span><span class="k">Context</span><span class="v">Reads business profile, voice, preferences</span></li>
       </ul>
     </div>
@@ -328,7 +328,7 @@
         </ul>
         <div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.8px;margin:12px 0 8px;">Persistence (3-Tier Memory)</div>
         <ul class="props">
-          <li><span class="dot g"></span><span class="k">Tier 1</span><span class="v">MEMORY.md &mdash; always loaded, curated facts</span></li>
+          <li><span class="dot g"></span><span class="k">Tier 1</span><span class="v">Core State &mdash; core-state.json, canonical facts + iris_voice_profile</span></li>
           <li><span class="dot g"></span><span class="k">Tier 2</span><span class="v">Daily logs &mdash; memory/logs/YYYY-MM-DD.md</span></li>
           <li><span class="dot y"></span><span class="k">Tier 3</span><span class="v">Pinecone + mem0 (optional, needs API key)</span></li>
           <li><span class="dot g"></span><span class="k">Data</span><span class="v">projects.db, tasks.db, accountability.db</span></li>
@@ -408,8 +408,8 @@
       </tr>
       <tr>
         <td>Long-term memory</td>
-        <td class="col-pro">&#9989; 3-tier: MEMORY.md + daily logs + Pinecone (semantic search, optional)</td>
-        <td class="col-core">&#10060; None. No vector store, no daily logs, no MEMORY.md.</td>
+        <td class="col-pro">&#9989; 3-tier: Core State + daily logs + Pinecone (semantic search, optional)</td>
+        <td class="col-core">&#10060; None. No Core State, no daily logs, no vector store.</td>
       </tr>
       <tr>
         <td>Cross-session recall</td>
@@ -556,7 +556,7 @@
       <span class="fa">&rarr;</span>
       <span class="fn fn-local">Loads CLAUDE.md kernel</span>
       <span class="fa">&rarr;</span>
-      <span class="fn fn-local">Reads MEMORY.md + daily log</span>
+      <span class="fn fn-local">Loads Core State + daily log</span>
       <span class="fa">&rarr;</span>
       <span class="fn fn-local">Ready &mdash; full context</span>
     </div>

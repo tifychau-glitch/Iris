@@ -24,9 +24,9 @@ When making meaningful changes to the IRIS system, update the visual architectur
 - Daily log or memory updates
 
 ## Current accurate counts (verify before updating):
-- Skills: 25
+- Skills: 38
 - MCP Connectors: 7 (Gmail, GCal, Slack, Canva, Chrome, Preview, Scheduled Tasks)
-- Memory Tiers: 3
+- Memory Tiers: 3 (Tier 1: Core State; Tier 2: Daily Logs; Tier 3: Pinecone. MEMORY.md is a derived projection of Core State, not a tier.)
 - Subagents: 3
 - SQLite DBs: 3 (projects.db, tasks.db, iris_accountability.db)
 - Deploy Targets: 2 (Local Mac, Hostinger VPS)

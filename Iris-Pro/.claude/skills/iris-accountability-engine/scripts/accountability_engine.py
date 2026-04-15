@@ -9,8 +9,8 @@ Commands:
   complete          Mark a commitment as done
   skip              Mark a commitment as skipped (with reason)
   daily_score       Calculate today's score and accountability level
-  get_level         Get current accountability level with personality context
-  calibrate         Set user preferences (max level, swearing, schedule)
+  get_voice_context Return iris_voice_profile + runtime mode suggestion
+  calibrate         Set schedule preferences (wake/sleep/check-ins)
   get_calibration   Return current calibration settings
   weekly_summary    7-day stats, streaks, and patterns
   streak            Current streak info for active goals
@@ -30,60 +30,16 @@ from pathlib import Path
 
 DB_PATH = Path(__file__).parent.parent.parent.parent.parent / "data" / "iris_accountability.db"
 TASKS_DB_PATH = Path(__file__).parent.parent.parent.parent.parent / "data" / "tasks.db"
+CORE_STATE_PATH = Path(__file__).parent.parent.parent.parent.parent / "memory" / "core-state.json"
 
-# Iris personality at each level
-LEVEL_PROFILES = {
-    1: {
-        "name": "Sweet Iris",
-        "description": "Genuinely encouraging and proud",
-        "tone": "warm, supportive, celebrating wins",
-        "examples": [
-            "Look at you go! I knew you had it in you.",
-            "Ok I see you! Three days in a row? That's not luck, that's discipline.",
-            "You actually did all three things today. I'm honestly impressed.",
-        ],
-    },
-    2: {
-        "name": "Subtle Side-Eye",
-        "description": "Passive guilt trip, says it's fine but it's clearly not",
-        "tone": "warm on the surface, subtle disappointment underneath",
-        "examples": [
-            "Oh you didn't do it? No worries. I'm sure tomorrow will be different.",
-            "That's fine. Rest is important too... I guess.",
-            "No judgment. Well, maybe a little. But mostly no judgment.",
-        ],
-    },
-    3: {
-        "name": "Passive Aggressive Check-In",
-        "description": "Pattern is forming, Iris is noticing and calling it out indirectly",
-        "tone": "pointed questions, rhetorical observations, concerned but sarcastic",
-        "examples": [
-            "So I noticed you said you'd do this three days ago. Just wondering if we're still doing goals or if we've moved on to something else?",
-            "Hey quick question. When you said you'd do it 'tomorrow,' which tomorrow did you mean exactly?",
-            "I'm not saying there's a pattern here, but if I were saying that, the pattern would be pretty obvious.",
-        ],
-    },
-    4: {
-        "name": "Direct Confrontation",
-        "description": "Dropping the act, real talk, still caring but not sugarcoating",
-        "tone": "direct, honest, no-BS, cuts through excuses",
-        "examples": [
-            "Hey. Real talk. You told me this mattered to you. Was that true or were we just having a moment?",
-            "I need you to be honest with me right now. What's actually going on? Because the excuses aren't adding up.",
-            "Look, I can keep sending you check-ins that you ignore, or we can figure out what's actually blocking you. Your call.",
-        ],
-    },
-    5: {
-        "name": "Full Drill Sergeant",
-        "description": "No more playing nice, full intensity accountability",
-        "tone": "commanding, urgent, zero tolerance for excuses, tough love",
-        "examples": [
-            "Get up. Open the laptop. I don't want to hear it. You can feel sorry for yourself AFTER you do the work.",
-            "You know what's standing between you and your goals? It's not time. It's not resources. It's you choosing comfort over progress. Every. Single. Day.",
-            "I'm done being nice about this. You said this mattered. Prove it. Right now. Not tomorrow. NOW.",
-        ],
-    },
-}
+
+def load_voice_profile():
+    """Read iris_voice_profile from core-state.json. Returns empty dict if missing."""
+    try:
+        with open(CORE_STATE_PATH) as f:
+            return json.load(f).get("iris_voice_profile", {})
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
 
 
 def get_connection():
@@ -241,25 +197,46 @@ def skip_commitment(args):
     }))
 
 
-def calculate_level(completion_rates, max_level):
-    """Calculate accountability level from recent completion rates."""
-    if not completion_rates:
-        return 1
+def detect_runtime_mode(conn):
+    """Detect runtime mode (steady / direct) from DB signals.
 
-    avg_rate = sum(completion_rates) / len(completion_rates)
+    Gentle mode is conversation-signal-driven (venting, illness language) and
+    cannot be detected here — the agent layer adds it at runtime.
 
-    if avg_rate >= 0.80:
-        level = 1
-    elif avg_rate >= 0.60:
-        level = 2
-    elif avg_rate >= 0.40:
-        level = 3
-    elif avg_rate >= 0.20:
-        level = 4
-    else:
-        level = 5
+    Returns: dict with mode, reason, and the signals used to decide.
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+    week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
 
-    return min(level, max_level)
+    recent_scores = conn.execute(
+        "SELECT completion_rate FROM daily_scores WHERE date >= ?", (week_ago,)
+    ).fetchall()
+    rates = [r["completion_rate"] for r in recent_scores]
+    avg_rate = round(sum(rates) / len(rates), 2) if rates else None
+
+    # Count commitments with the same description skipped 3+ times recently
+    repeat_slips = conn.execute(
+        """SELECT description, COUNT(*) as n FROM commitments
+           WHERE skipped = 1 AND due_date >= ?
+           GROUP BY description HAVING n >= 3""",
+        (week_ago,)
+    ).fetchall()
+
+    mode = "steady"
+    reason = "default"
+    if repeat_slips:
+        mode = "direct"
+        reason = f"repeat_slips_3plus: {repeat_slips[0]['description']}"
+
+    return {
+        "mode": mode,
+        "reason": reason,
+        "signals": {
+            "avg_completion_rate_7d": avg_rate,
+            "repeat_slip_commitments": [dict(r) for r in repeat_slips],
+            "days_of_data": len(rates),
+        },
+    }
 
 
 def daily_score(args):
@@ -287,87 +264,63 @@ def daily_score(args):
         (week_ago, today)
     ).fetchall()
 
-    rates = [r["completion_rate"] for r in past_scores] + [rate]
-
-    # Get calibration
-    cal = conn.execute("SELECT max_level FROM user_calibration WHERE id = 1").fetchone()
-    max_level = cal["max_level"] if cal else 5
-
-    level = calculate_level(rates, max_level)
-
-    # Upsert today's score
+    # Upsert today's score (no level — voice is separate now)
     conn.execute(
-        """INSERT INTO daily_scores (date, commitments_made, commitments_completed, completion_rate, accountability_level)
-           VALUES (?, ?, ?, ?, ?)
+        """INSERT INTO daily_scores (date, commitments_made, commitments_completed, completion_rate)
+           VALUES (?, ?, ?, ?)
            ON CONFLICT(date) DO UPDATE SET
              commitments_made = excluded.commitments_made,
              commitments_completed = excluded.commitments_completed,
-             completion_rate = excluded.completion_rate,
-             accountability_level = excluded.accountability_level""",
-        (today, made, completed, round(rate, 2), level)
+             completion_rate = excluded.completion_rate""",
+        (today, made, completed, round(rate, 2))
     )
     conn.commit()
     conn.close()
 
-    profile = LEVEL_PROFILES[level]
     print(json.dumps({
         "date": today,
         "commitments_made": made,
         "commitments_completed": completed,
         "completion_rate": round(rate, 2),
-        "accountability_level": level,
-        "level_name": profile["name"],
-        "level_tone": profile["tone"],
     }, indent=2))
 
 
-def get_level(args):
-    """Return current accountability level with full personality context."""
+def get_voice_context(args):
+    """Return voice profile + runtime mode suggestion for Iris to shape her response.
+
+    Voice profile is the stable personality. Mode is contextual flex based on
+    current signals. Gentle mode is conversation-signal-driven — the agent
+    layer must detect venting/illness/overwhelm and override `mode` accordingly.
+    """
+    profile = load_voice_profile()
+    if not profile:
+        print(json.dumps({
+            "status": "no_profile",
+            "message": "iris_voice_profile not set. Run personality-calibration skill to build it.",
+        }, indent=2))
+        return
+
     conn = get_connection()
-
-    week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
-    past_scores = conn.execute(
-        "SELECT completion_rate FROM daily_scores WHERE date >= ?",
-        (week_ago,)
-    ).fetchall()
-
-    rates = [r["completion_rate"] for r in past_scores]
-
-    cal = conn.execute("SELECT * FROM user_calibration WHERE id = 1").fetchone()
-    max_level = cal["max_level"] if cal else 5
-    swearing_ok = bool(cal["swearing_ok"]) if cal else False
-
-    level = calculate_level(rates, max_level)
-    profile = LEVEL_PROFILES[level]
-
+    mode_info = detect_runtime_mode(conn)
     conn.close()
+
     print(json.dumps({
-        "accountability_level": level,
-        "level_name": profile["name"],
-        "description": profile["description"],
-        "tone": profile["tone"],
-        "example_responses": profile["examples"],
-        "swearing_ok": swearing_ok,
-        "max_level": max_level,
-        "based_on_days": len(rates),
-        "avg_completion_rate": round(sum(rates) / len(rates), 2) if rates else None,
+        "voice_profile": profile,
+        "runtime_mode": mode_info["mode"],
+        "mode_reason": mode_info["reason"],
+        "signals": mode_info["signals"],
+        "agent_note": "If the user's message contains venting, illness, or overwhelm language, override mode to 'gentle' regardless of DB signals.",
     }, indent=2))
 
 
 def calibrate(args):
-    """Set user preferences."""
+    """Set schedule preferences. Voice/personality lives in iris_voice_profile (see personality-calibration skill)."""
     conn = get_connection()
     now = datetime.now().isoformat()
 
     updates = []
     params = []
 
-    if args.max_level is not None:
-        updates.append("max_level = ?")
-        params.append(max(1, min(5, args.max_level)))
-    if args.swearing is not None:
-        updates.append("swearing_ok = ?")
-        params.append(1 if args.swearing.lower() in ("ok", "yes", "true", "1") else 0)
     if args.wake:
         updates.append("wake_time = ?")
         params.append(args.wake)
@@ -385,14 +338,11 @@ def calibrate(args):
         conn.execute(query, params)
         conn.commit()
 
-    # Return current calibration
     cal = conn.execute("SELECT * FROM user_calibration WHERE id = 1").fetchone()
     conn.close()
 
     print(json.dumps({
         "status": "calibrated",
-        "max_level": cal["max_level"],
-        "swearing_ok": bool(cal["swearing_ok"]),
         "wake_time": cal["wake_time"],
         "sleep_time": cal["sleep_time"],
         "check_in_times": json.loads(cal["check_in_times"]),
@@ -400,15 +350,12 @@ def calibrate(args):
 
 
 def get_calibration(args):
-    """Return current calibration settings."""
+    """Return schedule settings. For voice profile, see personality-calibration skill."""
     conn = get_connection()
     cal = conn.execute("SELECT * FROM user_calibration WHERE id = 1").fetchone()
     conn.close()
 
     print(json.dumps({
-        "max_level": cal["max_level"],
-        "max_level_name": LEVEL_PROFILES[cal["max_level"]]["name"],
-        "swearing_ok": bool(cal["swearing_ok"]),
         "wake_time": cal["wake_time"],
         "sleep_time": cal["sleep_time"],
         "check_in_times": json.loads(cal["check_in_times"]),
@@ -652,15 +599,6 @@ def promise_vs_proof(args):
     ).fetchone()[0]
     trust_score = round(kept_14d / made_14d, 2) if made_14d > 0 else 0.0
 
-    # Current level
-    week_scores = conn.execute(
-        "SELECT completion_rate FROM daily_scores WHERE date >= ?", (one_week_ago,)
-    ).fetchall()
-    rates = [r["completion_rate"] for r in week_scores]
-    cal = conn.execute("SELECT max_level FROM user_calibration WHERE id = 1").fetchone()
-    max_level = cal["max_level"] if cal else 5
-    level = calculate_level(rates, max_level)
-
     conn.close()
     print(json.dumps({
         "period": f"{one_week_ago} to {today}",
@@ -670,8 +608,6 @@ def promise_vs_proof(args):
         "promises_unaddressed": unaddressed,
         "follow_through_rate": round(kept / made, 2) if made > 0 else 0.0,
         "self_trust_score": trust_score,
-        "accountability_level": level,
-        "level_name": LEVEL_PROFILES[level]["name"],
         "top_excuse_categories": top_excuses,
         "most_avoided_categories": most_avoided,
     }, indent=2))
@@ -700,17 +636,6 @@ def end_of_day(args):
     total = len(rows)
     completion_rate = round(len(done) / total, 2) if total > 0 else 0.0
 
-    # Calculate today's score
-    cal = conn.execute("SELECT max_level FROM user_calibration WHERE id = 1").fetchone()
-    max_level = cal["max_level"] if cal else 5
-    week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
-    past_scores = conn.execute(
-        "SELECT completion_rate FROM daily_scores WHERE date >= ? AND date < ?",
-        (week_ago, today)
-    ).fetchall()
-    rates = [r["completion_rate"] for r in past_scores] + [completion_rate]
-    level = calculate_level(rates, max_level)
-
     conn.close()
     print(json.dumps({
         "has_data": True,
@@ -720,8 +645,6 @@ def end_of_day(args):
         "missed": [{"id": d["id"], "description": d["description"]} for d in missed],
         "skipped": [{"id": d["id"], "description": d["description"], "reason": d["skip_reason"]} for d in skipped],
         "completion_rate": completion_rate,
-        "accountability_level": level,
-        "level_name": LEVEL_PROFILES[level]["name"],
     }, indent=2))
 
 
@@ -766,13 +689,11 @@ def main():
     # daily_score
     subparsers.add_parser("daily_score")
 
-    # get_level
-    subparsers.add_parser("get_level")
+    # get_voice_context — voice profile + runtime mode suggestion
+    subparsers.add_parser("get_voice_context")
 
-    # calibrate
+    # calibrate — schedule only; voice lives in personality-calibration
     cal_p = subparsers.add_parser("calibrate")
-    cal_p.add_argument("--max-level", type=int, dest="max_level")
-    cal_p.add_argument("--swearing")
     cal_p.add_argument("--wake")
     cal_p.add_argument("--sleep")
     cal_p.add_argument("--check-ins", dest="check_ins")
@@ -811,7 +732,7 @@ def main():
         "complete": complete_commitment,
         "skip": skip_commitment,
         "daily_score": daily_score,
-        "get_level": get_level,
+        "get_voice_context": get_voice_context,
         "calibrate": calibrate,
         "get_calibration": get_calibration,
         "weekly_summary": weekly_summary,

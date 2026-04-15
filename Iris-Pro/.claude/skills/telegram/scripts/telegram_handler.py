@@ -51,7 +51,8 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 # Import sibling modules
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from telegram_send import send_message, send_typing_action
+from telegram_send import send_message, send_typing_action, send_voice
+from voice_service import synthesize_speech, user_requested_voice_reply
 from telegram_bot import (
     poll_once, is_user_allowed, is_rate_limited,
     is_blocked_content, requires_confirmation, load_config,
@@ -233,40 +234,49 @@ def get_memory_context(user_message: str) -> str:
 
 
 def get_accountability_context() -> str:
-    """
-    Fetch the current accountability level from the engine.
-    Shapes IRIS's personality based on user's follow-through behavior.
-    """
+    """Fetch Iris's voice profile + runtime mode from the engine."""
     if not ACCOUNTABILITY_ENGINE.exists():
         return ""
     try:
         result = subprocess.run(
-            [sys.executable, str(ACCOUNTABILITY_ENGINE), "get_level"],
+            [sys.executable, str(ACCOUNTABILITY_ENGINE), "get_voice_context"],
             capture_output=True, text=True, timeout=10,
             cwd=str(PROJECT_ROOT),
         )
-        if result.returncode == 0:
-            data = json.loads(result.stdout)
-            level = data.get("accountability_level", 1)
-            name = data.get("level_name", "Sweet Iris")
-            tone = data.get("tone", "warm, supportive")
-            examples = data.get("example_responses", [])[:2]
-            avg_rate = data.get("avg_completion_rate")
+        if result.returncode != 0:
+            return ""
+        data = json.loads(result.stdout)
+        if data.get("status") == "no_profile":
+            return ""
 
-            lines = [
-                "<accountability_context>",
-                f"Current accountability level: {level}/5 — {name}",
-                f"Tone: {tone}",
-            ]
-            if avg_rate is not None:
-                lines.append(f"User's 7-day completion rate: {int(avg_rate * 100)}%")
-            if examples:
-                lines.append(f"Example tone: {examples[0]}")
-            lines.append("Adjust your personality to match this level.")
-            lines.append("</accountability_context>")
-            return "\n".join(lines) + "\n\n"
+        profile = data.get("voice_profile", {})
+        mode = data.get("runtime_mode", "steady")
+        mode_reason = data.get("mode_reason", "")
+        signals = data.get("signals", {}) or {}
+        avg_rate = signals.get("avg_completion_rate_7d")
+
+        lines = [
+            "<iris_voice_context>",
+            f"Voice profile: warmth={profile.get('warmth','warm')}, "
+            f"directness_ceiling={profile.get('directness_ceiling','moderate')}, "
+            f"humor={profile.get('humor','unknown')}, "
+            f"swearing_ok={profile.get('swearing_ok', False)}",
+            f"Motivators: {', '.join(profile.get('motivators', []) or ['n/a'])}",
+            f"Shutdowns (avoid): {', '.join(profile.get('shutdowns', []) or ['n/a'])}",
+            f"Win acknowledgment: {profile.get('win_acknowledgment','situational')}",
+            f"Current runtime mode: {mode} ({mode_reason})",
+        ]
+        if avg_rate is not None:
+            lines.append(f"7-day completion rate: {int(avg_rate * 100)}%")
+        lines.append(
+            "If the user's message signals venting, illness, or overwhelm, "
+            "override mode to 'gentle' regardless of DB signals. "
+            "Never exceed the directness_ceiling, even in 'direct' mode."
+        )
+        lines.append("</iris_voice_context>")
+        return "\n".join(lines) + "\n\n"
     except Exception as e:
-        print(f"Warning: Accountability level check failed: {e}")
+        print(f"Warning: voice context fetch failed: {e}")
     return ""
 
 
@@ -674,8 +684,23 @@ def handle_message(message: Dict[str, Any], dry_run: bool = False) -> Dict[str, 
     # Format and send response — skip if Claude ran tools with no text output
     formatted = format_response(success, response, execution_time)
     send_result = {"success": False, "skipped": True}
+
+    voice_mode = message.get("is_voice") or user_requested_voice_reply(text)
+
     if formatted and formatted.strip():
-        send_result = send_message(chat_id, formatted)
+        if voice_mode and success:
+            try:
+                audio_path = synthesize_speech(formatted)
+                send_result = send_voice(chat_id, str(audio_path))
+                try:
+                    audio_path.unlink()
+                except OSError:
+                    pass
+            except Exception as e:
+                print(f"[voice] TTS failed, falling back to text: {e}")
+                send_result = send_message(chat_id, formatted)
+        else:
+            send_result = send_message(chat_id, formatted)
 
     # Check if this response is a hook that should trigger silence tracking
     config = load_config()
@@ -737,7 +762,7 @@ def process_updates(once: bool = False, dry_run: bool = False) -> Dict[str, Any]
                 offset = poll_result.get("new_offset", offset)
 
                 for msg_result in poll_result.get("results", []):
-                    if msg_result.get("processed") and msg_result.get("text"):
+                    if msg_result.get("processed") and (msg_result.get("text") or msg_result.get("is_voice")):
                         # User responded — clear any silence timer for this chat
                         chat_id = msg_result.get("chat_id")
                         if chat_id:
