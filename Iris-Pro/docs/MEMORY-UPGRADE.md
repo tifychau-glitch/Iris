@@ -120,7 +120,7 @@ The mem0 config is at `.claude/skills/memory/references/mem0_config.yaml`. The d
 vector_store:
   provider: "pinecone"
   config:
-    index_name: "your-custom-name"  # Change this
+    collection_name: "your-custom-name"  # Change this (mem0 calls this collection_name)
     embedding_model_dims: 1536
     api_key: "${PINECONE_API_KEY}"
 ```

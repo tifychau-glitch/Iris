@@ -183,8 +183,8 @@ def update_pinecone_index(index_name, dry_run=False):
 
     content = CONFIG_PATH.read_text()
     new_content = content.replace(
-        'index_name: "iris-memory"',
-        f'index_name: "{index_name}"'
+        'collection_name: "iris-memory"',
+        f'collection_name: "{index_name}"'
     )
 
     if content == new_content and "iris-memory" not in content:

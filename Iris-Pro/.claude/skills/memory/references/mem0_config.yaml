@@ -28,7 +28,7 @@ embedder:
 vector_store:
   provider: "pinecone"
   config:
-    index_name: "iris-memory"
+    collection_name: "iris-memory"
     embedding_model_dims: 1536
     api_key: "${PINECONE_API_KEY}"
 
